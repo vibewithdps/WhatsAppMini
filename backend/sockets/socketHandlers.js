@@ -145,9 +145,11 @@ export const setupSocketHandlers = (io) => {
      * WebRTC 1-on-1 Audio/Video Call Signaling
      */
     socket.on('call_user', ({ userToCall, signalData, from, callerName, callerAvatar, callType, chatId }) => {
-      socket.to(userToCall).emit('incoming_call', {
+      const targetId = userToCall?.toString();
+      console.log(`📞 [Socket] call_user from ${from} to ${targetId} (${callType})`);
+      io.to(targetId).emit('incoming_call', {
         signal: signalData,
-        from,
+        from: from?.toString() || currentUserId,
         callerName,
         callerAvatar,
         callType,
@@ -157,17 +159,22 @@ export const setupSocketHandlers = (io) => {
     });
 
     socket.on('answer_call', ({ signal, to, from }) => {
-      socket.to(to).emit('call_accepted', {
+      const targetId = to?.toString();
+      console.log(`✅ [Socket] answer_call from ${from} to ${targetId}`);
+      io.to(targetId).emit('call_accepted', {
         signal,
-        from,
+        from: from?.toString() || currentUserId,
       });
     });
 
     socket.on('ice_candidate', ({ candidate, to }) => {
-      socket.to(to).emit('ice_candidate', {
-        candidate,
-        from: currentUserId,
-      });
+      const targetId = to?.toString();
+      if (targetId && candidate) {
+        io.to(targetId).emit('ice_candidate', {
+          candidate,
+          from: currentUserId,
+        });
+      }
     });
 
     socket.on('reject_call', async ({ to, chatId, callType, reason }) => {

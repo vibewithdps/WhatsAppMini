@@ -11,7 +11,10 @@ const ICE_SERVERS = {
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:global.stun.twilio.com:3478' },
+    { urls: 'stun:stun.services.mozilla.com' },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 export const useWebRTC = () => {
@@ -60,6 +63,13 @@ export const useWebRTC = () => {
       } else {
         const stream = new MediaStream([event.track]);
         setRemoteStream(stream);
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log('📡 ICE Connection State:', pc.iceConnectionState);
+      if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        setCallStatus('connected');
       }
     };
 
@@ -135,11 +145,11 @@ export const useWebRTC = () => {
 
       // Socket Listeners
       const handleCallAccepted = async ({ signal }) => {
+        console.log('📡 Call Accepted by receiver! Transitioning to connected...');
+        setCallStatus('connected');
         if (pc && pc.signalingState !== 'closed') {
           try {
             await pc.setRemoteDescription(new RTCSessionDescription(signal));
-            setCallStatus('connected');
-
             while (candidateQueueRef.current.length > 0) {
               const candidate = candidateQueueRef.current.shift();
               await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
@@ -151,7 +161,7 @@ export const useWebRTC = () => {
       };
 
       const handleIceCandidate = async ({ candidate }) => {
-        if (!pc || pc.signalingState === 'closed') return;
+        if (!pc || pc.signalingState === 'closed' || !candidate) return;
 
         if (pc.remoteDescription) {
           try {
@@ -162,7 +172,9 @@ export const useWebRTC = () => {
         }
       };
 
-      socket.once('call_accepted', handleCallAccepted);
+      socket.off('call_accepted');
+      socket.off('ice_candidate');
+      socket.on('call_accepted', handleCallAccepted);
       socket.on('ice_candidate', handleIceCandidate);
     } catch (err) {
       console.error('Failed to start WebRTC call:', err);
@@ -325,6 +337,7 @@ export const useWebRTC = () => {
         }
       };
 
+      socket.off('ice_candidate');
       socket.on('ice_candidate', handleIceCandidate);
     } catch (err) {
       console.error('Failed to answer call:', err);
