@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --wa-bg: #efeae2;
+  --wa-panel: #ffffff;
+  --wa-header: #f0f2f5;
+  --wa-hover: #f5f6f6;
+  --wa-border: #e9edef;
+  --wa-input: #f0f2f5;
+  --wa-text-primary: #111b21;
+  --wa-text-secondary: #54656f;
+  --wa-text-muted: #8696a0;
+  --wa-bubble-in: #ffffff;
+  --wa-bubble-out: #d9fdd3;
+}
+
+.dark {
+  --wa-bg: #111b21;
+  --wa-panel: #202c33;
+  --wa-header: #202c33;
+  --wa-hover: #2a3942;
+  --wa-border: #222d34;
+  --wa-input: #2a3942;
+  --wa-text-primary: #e9edef;
+  --wa-text-secondary: #8696a0;
+  --wa-text-muted: #667781;
+  --wa-bubble-in: #202c33;
+  --wa-bubble-out: #005c4b;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--wa-bg);
+    color: var(--wa-text-primary);
+  }
+
+  /* Custom WhatsApp subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(134, 150, 160, 0.2);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(134, 150, 160, 0.4);
+  }
+
+  /* Universal high-contrast inputs */
+  input, textarea, select {
+    color: var(--wa-text-primary);
+  }
+}
+
+/* WhatsApp Chat Wallpaper Background Pattern */
+.wa-chat-bg-dark {
+  background-color: #0b141a;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+.wa-chat-bg-light {
+  background-color: #efeae2;
+  background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+/* Glassmorphism modal backdrops */
+.glass-panel {
+  background: rgba(32, 44, 51, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Audio wave pulsing animation */
+@keyframes pulse-wave {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+.animate-wave-1 { animation: pulse-wave 1s infinite ease-in-out 0.1s; }
+.animate-wave-2 { animation: pulse-wave 1s infinite ease-in-out 0.2s; }
+.animate-wave-3 { animation: pulse-wave 1s infinite ease-in-out 0.3s; }
+.animate-wave-4 { animation: pulse-wave 1s infinite ease-in-out 0.4s; }
+.animate-wave-5 { animation: pulse-wave 1s infinite ease-in-out 0.5s; }
+
+/* Custom emoji picker styles override for dark theme */
+.epr-dark-theme {
+  --epr-bg-color: #202c33 !important;
+  --epr-category-label-bg-color: #202c33 !important;
+  --epr-search-input-bg-color: #111b21 !important;
+  --epr-search-input-text-color: #e9edef !important;
+  --epr-search-border-color: #222d34 !important;
+}
