@@ -54,12 +54,17 @@ export const useWebRTC = () => {
     };
 
     pc.ontrack = (event) => {
+      console.log('🎥 WebRTC Remote track received:', event.track.kind);
       if (event.streams && event.streams[0]) {
         setRemoteStream(event.streams[0]);
+      } else {
+        const stream = new MediaStream([event.track]);
+        setRemoteStream(stream);
       }
     };
 
     pc.onconnectionstatechange = () => {
+      console.log('🔗 Connection state:', pc.connectionState);
       if (pc.connectionState === 'connected') {
         setCallStatus('connected');
       } else if (
@@ -97,7 +102,7 @@ export const useWebRTC = () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
-          video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false,
+          video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false,
         });
       } catch (mediaErr) {
         if (callType === 'video') {
@@ -114,7 +119,7 @@ export const useWebRTC = () => {
 
       const offer = await pc.createOffer({
         offerToReceiveAudio: true,
-        offerToReceiveVideo: callType === 'video',
+        offerToReceiveVideo: true,
       });
       await pc.setLocalDescription(offer);
 
@@ -198,7 +203,7 @@ export const useWebRTC = () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
-          video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false,
+          video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false,
         });
       } catch (e) {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -247,7 +252,7 @@ export const useWebRTC = () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
-          video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false,
+          video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false,
         });
       } catch (mediaErr) {
         if (callType === 'video') {
@@ -262,6 +267,8 @@ export const useWebRTC = () => {
       if (isGroup) {
         useCallStore.setState({
           isGroupCall: true,
+          callStatus: 'connected',
+          callType,
           groupInfo: {
             chatId: incomingCallData.chatId,
             groupName: incomingCallData.groupName,
@@ -272,16 +279,28 @@ export const useWebRTC = () => {
           chatId: incomingCallData.chatId,
           user: { _id: user._id, name: user.name, avatar: user.avatar },
         });
-        setCallStatus('connected');
         return;
       }
+
+      useCallStore.setState({
+        callStatus: 'connected',
+        callType,
+        caller: {
+          _id: incomingCallData.from,
+          name: incomingCallData.callerName,
+          avatar: incomingCallData.callerAvatar,
+        },
+      });
 
       const pc = createPeerConnection(incomingCallData.from);
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCallData.signal));
 
-      const answer = await pc.createAnswer();
+      const answer = await pc.createAnswer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
       await pc.setLocalDescription(answer);
 
       while (candidateQueueRef.current.length > 0) {
@@ -295,10 +314,8 @@ export const useWebRTC = () => {
         from: user._id,
       });
 
-      setCallStatus('connected');
-
       const handleIceCandidate = async ({ candidate }) => {
-        if (!pc || pc.signalingState === 'closed') return;
+        if (!pc || pc.signalingState === 'closed' || !candidate) return;
         if (pc.remoteDescription) {
           try {
             await pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -318,46 +335,60 @@ export const useWebRTC = () => {
   };
 
   /**
-   * Screen Share Toggle
+   * Toggle Screen Sharing
    */
   const toggleScreenShare = async () => {
-    const { isScreenSharing, localStream } = useCallStore.getState();
+    const isSharing = useCallStore.getState().isScreenSharing;
     const pc = peerConnectionRef.current;
 
-    if (!isScreenSharing) {
+    if (!isSharing) {
       try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        const screenTrack = screenStream.getVideoTracks()[0];
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+        });
 
+        const videoTrack = screenStream.getVideoTracks()[0];
         if (pc) {
           const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
           if (sender) {
-            sender.replaceTrack(screenTrack);
+            sender.replaceTrack(videoTrack);
           }
         }
 
-        screenTrack.onended = () => {
-          if (localStream) {
-            const camTrack = localStream.getVideoTracks()[0];
-            if (pc && camTrack) {
-              const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
-              if (sender) sender.replaceTrack(camTrack);
-            }
-          }
-          useCallStore.setState({ isScreenSharing: false });
-        };
-
+        setLocalStream(screenStream);
         useCallStore.setState({ isScreenSharing: true });
-      } catch (e) {}
+
+        videoTrack.onended = () => {
+          stopScreenSharing();
+        };
+      } catch (err) {
+        console.error('Screen sharing error:', err);
+      }
     } else {
-      if (localStream && pc) {
-        const camTrack = localStream.getVideoTracks()[0];
+      stopScreenSharing();
+    }
+  };
+
+  const stopScreenSharing = async () => {
+    const pc = peerConnectionRef.current;
+    try {
+      const cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+
+      const videoTrack = cameraStream.getVideoTracks()[0];
+      if (pc) {
         const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
-        if (sender && camTrack) {
-          sender.replaceTrack(camTrack);
+        if (sender) {
+          sender.replaceTrack(videoTrack);
         }
       }
+
+      setLocalStream(cameraStream);
       useCallStore.setState({ isScreenSharing: false });
+    } catch (err) {
+      console.error('Revert camera stream error:', err);
     }
   };
 

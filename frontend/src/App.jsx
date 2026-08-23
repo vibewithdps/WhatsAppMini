@@ -116,7 +116,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen w-screen flex bg-wa-dark-bg text-wa-text-primary overflow-hidden font-sans select-none relative">
+    <div className="h-[100dvh] h-screen w-screen flex bg-wa-dark-bg text-wa-text-primary overflow-hidden font-sans select-none fixed inset-0">
       {/* Leftmost Navigation Rail on Desktop / Bottom bar on Mobile (hidden when chatting on mobile) */}
       <div className={`${activeChat ? 'hidden lg:flex' : 'flex'}`}>
         <NavigationRail

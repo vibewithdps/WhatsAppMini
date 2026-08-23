@@ -37,26 +37,13 @@ export const CallScreen = () => {
 
   const { toggleScreenShare, cleanupPeer } = useWebRTC();
 
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
   const remoteAudioRef = useRef(null);
 
-  // Set video & audio stream sources
+  // Auto-play remote audio stream
   useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [localStream]);
-
-  useEffect(() => {
-    if (remoteStream) {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStream;
-      }
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = remoteStream;
-        remoteAudioRef.current.play().catch(() => {});
-      }
+    if (remoteStream && remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = remoteStream;
+      remoteAudioRef.current.play().catch(() => {});
     }
   }, [remoteStream]);
 
@@ -89,16 +76,16 @@ export const CallScreen = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-wa-dark-bg flex flex-col justify-between p-4 md:p-6 select-none animate-fade-in">
+    <div className="fixed inset-0 z-50 bg-wa-dark-bg flex flex-col justify-between p-3 sm:p-6 select-none animate-fade-in">
       {/* Hidden Audio Player for Remote Audio Stream */}
       <audio ref={remoteAudioRef} autoPlay playsInline />
 
       {/* Top Header */}
-      <div className="flex items-center justify-between z-10">
+      <div className="flex items-center justify-between z-10 pt-2 sm:pt-0">
         <div className="flex items-center gap-2 text-xs text-wa-text-secondary">
           <Lock className="w-3.5 h-3.5 text-wa-green" />
-          <span className="hidden sm:inline">
-            {isGroupCall ? 'End-to-End Encrypted Group Call' : 'End-to-End Encrypted Call'}
+          <span className="inline">
+            {isGroupCall ? 'Encrypted Group Call' : 'End-to-End Encrypted'}
           </span>
         </div>
 
@@ -106,7 +93,7 @@ export const CallScreen = () => {
           {isGroupCall && (
             <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center gap-1.5 text-xs text-cyan-400 font-bold">
               <Users className="w-3.5 h-3.5" />
-              <span>Group Call ({1 + groupPeers.length})</span>
+              <span>Group ({1 + groupPeers.length})</span>
             </div>
           )}
 
@@ -118,16 +105,21 @@ export const CallScreen = () => {
         </div>
       </div>
 
-      {/* Center Stage: Video Grid or Audio Presentation */}
-      <div className="flex-1 relative flex items-center justify-center my-3 overflow-hidden rounded-3xl bg-black/50 border border-wa-dark-border">
+      {/* Center Stage: Video Display or Audio Presentation */}
+      <div className="flex-1 relative flex items-center justify-center my-2 sm:my-3 overflow-hidden rounded-3xl bg-black/60 border border-wa-dark-border">
         {isGroupCall ? (
           /* Multi-Participant Group Call Grid */
-          <div className="w-full h-full p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto">
+          <div className="w-full h-full p-2 sm:p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 overflow-y-auto">
             {/* Self Video Card */}
             <div className="relative rounded-2xl overflow-hidden bg-wa-dark-panel border border-wa-dark-border flex items-center justify-center min-h-[160px] shadow-lg">
               {callType === 'video' && !isCameraOff ? (
                 <video
-                  ref={localVideoRef}
+                  ref={(el) => {
+                    if (el && localStream && el.srcObject !== localStream) {
+                      el.srcObject = localStream;
+                      el.play().catch(() => {});
+                    }
+                  }}
                   autoPlay
                   playsInline
                   muted
@@ -148,60 +140,54 @@ export const CallScreen = () => {
               </div>
             </div>
 
-            {/* Remote Group Peers */}
-            {groupPeers.length === 0 ? (
-              <div className="rounded-2xl bg-wa-dark-panel/50 border border-dashed border-wa-dark-border flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mb-2 animate-pulse">
-                  <Users className="w-8 h-8 text-cyan-400" />
-                </div>
-                <p className="text-xs font-bold text-wa-text-primary">
-                  Waiting for members to join...
-                </p>
-                <p className="text-[10px] text-wa-text-secondary mt-1">
-                  Invited {peer.name} participants
-                </p>
-              </div>
-            ) : (
-              groupPeers.map((p, idx) => (
-                <div
-                  key={idx}
-                  className="relative rounded-2xl overflow-hidden bg-wa-dark-panel border border-wa-dark-border flex items-center justify-center min-h-[160px] shadow-lg"
-                >
-                  {p.stream && callType === 'video' ? (
-                    <video
-                      autoPlay
-                      playsInline
-                      ref={(el) => {
-                        if (el && p.stream) el.srcObject = p.stream;
-                      }}
-                      className="w-full h-full object-cover"
+            {/* Other Remote Peers */}
+            {groupPeers.map((p, idx) => (
+              <div
+                key={p.socketId || idx}
+                className="relative rounded-2xl overflow-hidden bg-wa-dark-panel border border-wa-dark-border flex items-center justify-center min-h-[160px] shadow-lg"
+              >
+                {p.stream ? (
+                  <video
+                    ref={(el) => {
+                      if (el && p.stream && el.srcObject !== p.stream) {
+                        el.srcObject = p.stream;
+                        el.play().catch(() => {});
+                      }
+                    }}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <img
+                      src={p.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                      alt={p.user?.name || 'Member'}
+                      className="w-16 h-16 rounded-full object-cover ring-2 ring-cyan-400"
                     />
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <img
-                        src={p.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                        alt={p.user?.name || 'Member'}
-                        className="w-16 h-16 rounded-full object-cover ring-2 ring-cyan-400"
-                      />
-                      <span className="text-xs font-bold text-wa-text-primary">
-                        {p.user?.name || 'Participant'}
-                      </span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-black/60 text-[11px] text-white font-semibold">
-                    {p.user?.name || 'Participant'}
+                    <span className="text-xs font-bold text-wa-text-primary">
+                      {p.user?.name || 'Participant'}
+                    </span>
                   </div>
+                )}
+                <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-black/60 text-[11px] text-white font-semibold">
+                  {p.user?.name || 'Participant'}
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
         ) : callType === 'video' ? (
-          /* 1-on-1 Video Presentation */
+          /* 1-on-1 Video Call Layout */
           <>
             {/* Remote Full Video */}
             {remoteStream ? (
               <video
-                ref={remoteVideoRef}
+                ref={(el) => {
+                  if (el && remoteStream && el.srcObject !== remoteStream) {
+                    el.srcObject = remoteStream;
+                    el.play().catch(() => {});
+                  }
+                }}
                 autoPlay
                 playsInline
                 className="w-full h-full object-cover rounded-3xl"
@@ -230,10 +216,15 @@ export const CallScreen = () => {
               </div>
             )}
 
-            {/* Local PIP Video */}
-            <div className="absolute bottom-4 right-4 w-28 h-36 sm:w-36 sm:h-48 md:w-48 md:h-64 bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-wa-dark-border z-20">
+            {/* Local PIP Video (Self Camera) */}
+            <div className="absolute bottom-3 right-3 w-28 h-40 sm:w-36 sm:h-48 md:w-48 md:h-64 bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-wa-dark-border z-20">
               <video
-                ref={localVideoRef}
+                ref={(el) => {
+                  if (el && localStream && el.srcObject !== localStream) {
+                    el.srcObject = localStream;
+                    el.play().catch(() => {});
+                  }
+                }}
                 autoPlay
                 playsInline
                 muted
@@ -259,77 +250,79 @@ export const CallScreen = () => {
                   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
                 }
                 alt={peer.name}
-                className="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover ring-4 ring-wa-green relative z-10 shadow-2xl"
+                className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover ring-4 ring-wa-dark-border shadow-2xl"
               />
             </div>
             <div className="text-center">
               <h2 className="text-xl sm:text-2xl font-bold text-wa-text-primary">
                 {peer.name}
               </h2>
-              <p className="text-xs sm:text-sm text-wa-green font-medium mt-1">
-                {callStatus === 'calling' ? 'Ringing...' : 'Voice Call Connected'}
+              <p className="text-sm text-wa-green font-medium mt-1.5">
+                {callStatus === 'calling' ? 'Ringing...' : 'Voice Call Active'}
               </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom Floating Controls Bar */}
-      <div className="flex items-center justify-center gap-4 sm:gap-6 z-10 pb-2">
-        {/* Mic Toggle */}
+      {/* Bottom Floating Control Bar */}
+      <div className="flex items-center justify-center gap-3 sm:gap-4 py-2 pb-safe z-10">
+        {/* Toggle Mute */}
         <button
           onClick={toggleMute}
-          title={isMuted ? 'Unmute' : 'Mute'}
-          className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-lg ${
             isMuted
-              ? 'bg-red-600 text-white'
+              ? 'bg-red-500/20 text-red-400 border border-red-500/40'
               : 'bg-wa-dark-panel hover:bg-wa-dark-hover text-wa-text-primary border border-wa-dark-border'
           }`}
+          title={isMuted ? 'Unmute' : 'Mute'}
         >
-          {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          {isMuted ? (
+            <MicOff className="w-5 h-5 sm:w-6 sm:h-6" />
+          ) : (
+            <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
+          )}
         </button>
 
-        {/* Camera Toggle */}
+        {/* Toggle Video */}
         {callType === 'video' && (
           <button
             onClick={toggleCamera}
-            title={isCameraOff ? 'Turn on Camera' : 'Turn off Camera'}
-            className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-lg ${
               isCameraOff
-                ? 'bg-red-600 text-white'
+                ? 'bg-red-500/20 text-red-400 border border-red-500/40'
                 : 'bg-wa-dark-panel hover:bg-wa-dark-hover text-wa-text-primary border border-wa-dark-border'
             }`}
+            title={isCameraOff ? 'Turn Camera On' : 'Turn Camera Off'}
           >
             {isCameraOff ? (
-              <VideoOff className="w-5 h-5" />
+              <VideoOff className="w-5 h-5 sm:w-6 sm:h-6" />
             ) : (
-              <Video className="w-5 h-5" />
+              <Video className="w-5 h-5 sm:w-6 sm:h-6" />
             )}
           </button>
         )}
 
-        {/* Screen Share */}
-        {callType === 'video' && (
-          <button
-            onClick={toggleScreenShare}
-            title="Screen Share"
-            className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${
-              isScreenSharing
-                ? 'bg-wa-green text-white'
-                : 'bg-wa-dark-panel hover:bg-wa-dark-hover text-wa-text-primary border border-wa-dark-border'
-            }`}
-          >
-            <ScreenShare className="w-5 h-5" />
-          </button>
-        )}
+        {/* Screen Share (Desktop/Laptop) */}
+        <button
+          onClick={toggleScreenShare}
+          className={`hidden sm:flex w-12 h-12 sm:w-14 sm:h-14 rounded-full items-center justify-center transition-all active:scale-95 shadow-lg ${
+            isScreenSharing
+              ? 'bg-wa-green/20 text-wa-green border border-wa-green/40'
+              : 'bg-wa-dark-panel hover:bg-wa-dark-hover text-wa-text-primary border border-wa-dark-border'
+          }`}
+          title="Share Screen"
+        >
+          <ScreenShare className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
 
-        {/* End Call */}
+        {/* End Call / Hang Up */}
         <button
           onClick={handleHangup}
+          className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-2xl transition-all active:scale-95"
           title="End Call"
-          className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-xl transition-transform active:scale-95"
         >
-          <PhoneOff className="w-6 h-6" />
+          <PhoneOff className="w-6 h-6 sm:w-7 sm:h-7" />
         </button>
       </div>
     </div>
