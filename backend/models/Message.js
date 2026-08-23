@@ -48,7 +48,7 @@ const messageSchema = new mongoose.Schema(
     },
     fileType: {
       type: String,
-      enum: ['image', 'video', 'audio', 'voice', 'document', null],
+      enum: ['image', 'video', 'audio', 'voice', 'document', 'call', null],
       default: null,
     },
     fileName: {
@@ -58,6 +58,22 @@ const messageSchema = new mongoose.Schema(
     fileSize: {
       type: Number,
       default: null,
+    },
+    callDetails: {
+      callType: {
+        type: String,
+        enum: ['audio', 'video'],
+        default: 'audio',
+      },
+      status: {
+        type: String,
+        enum: ['completed', 'missed', 'declined', 'cancelled'],
+        default: 'completed',
+      },
+      duration: {
+        type: Number,
+        default: 0,
+      },
     },
     chat: {
       type: mongoose.Schema.Types.ObjectId,

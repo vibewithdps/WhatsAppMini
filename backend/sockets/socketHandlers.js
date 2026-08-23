@@ -1,5 +1,7 @@
 import User from '../models/User.js';
 import Message from '../models/Message.js';
+import Chat from '../models/Chat.js';
+import Call from '../models/Call.js';
 import { getCacheClient } from '../config/redis.js';
 
 // In-memory mapping of active socket connections: userId -> Set of socketIds
@@ -168,19 +170,79 @@ export const setupSocketHandlers = (io) => {
       });
     });
 
-    socket.on('reject_call', ({ to, reason }) => {
+    socket.on('reject_call', async ({ to, chatId, callType, reason }) => {
       socket.to(to).emit('call_rejected', {
         from: currentUserId,
         reason: reason || 'Call declined',
       });
+
+      // Save declined/missed call in chat
+      if (chatId) {
+        try {
+          const callMsg = await Message.create({
+            sender: to || currentUserId,
+            content: callType === 'video' ? 'Missed video call' : 'Missed voice call',
+            fileType: 'call',
+            chat: chatId,
+            callDetails: {
+              callType: callType || 'audio',
+              status: 'declined',
+              duration: 0,
+            },
+          });
+
+          const populatedMsg = await Message.findById(callMsg._id)
+            .populate('sender', 'name avatar')
+            .populate('chat');
+
+          await Chat.findByIdAndUpdate(chatId, { latestMessage: populatedMsg });
+
+          io.to(chatId).emit('message_received', populatedMsg);
+          if (to) io.to(to).emit('message_received', populatedMsg);
+        } catch (err) {
+          console.error('Error logging rejected call to chat:', err.message);
+        }
+      }
     });
 
-    socket.on('end_call', ({ to, chatId }) => {
+    socket.on('end_call', async ({ to, chatId, callType, duration, status }) => {
       if (to) {
         socket.to(to).emit('call_ended', { from: currentUserId, chatId });
       }
       if (chatId) {
         socket.to(chatId).emit('call_ended', { from: currentUserId, chatId });
+
+        // Save Call in Chat Message History
+        try {
+          const callDurationNum = Number(duration) || 0;
+          const isCompleted = callDurationNum > 0 || status === 'completed';
+          const callTitle = callType === 'video'
+            ? (isCompleted ? 'Video call' : 'Missed video call')
+            : (isCompleted ? 'Voice call' : 'Missed voice call');
+
+          const callMsg = await Message.create({
+            sender: currentUserId,
+            content: callTitle,
+            fileType: 'call',
+            chat: chatId,
+            callDetails: {
+              callType: callType || 'audio',
+              status: isCompleted ? 'completed' : 'missed',
+              duration: callDurationNum,
+            },
+          });
+
+          const populatedMsg = await Message.findById(callMsg._id)
+            .populate('sender', 'name avatar')
+            .populate('chat');
+
+          await Chat.findByIdAndUpdate(chatId, { latestMessage: populatedMsg });
+
+          io.to(chatId).emit('message_received', populatedMsg);
+          if (to) io.to(to).emit('message_received', populatedMsg);
+        } catch (err) {
+          console.error('Error logging completed call to chat:', err.message);
+        }
       }
     });
 

@@ -90,7 +90,12 @@ export const useCallStore = create((set, get) => ({
     const data = get().incomingCallData;
     const socket = getSocket();
     if (socket && data) {
-      socket.emit('reject_call', { to: data.from, reason: 'Declined' });
+      socket.emit('reject_call', {
+        to: data.from,
+        chatId: data.chatId,
+        callType: data.callType || 'audio',
+        reason: 'Declined',
+      });
     }
     set({
       callStatus: 'idle',
@@ -128,16 +133,22 @@ export const useCallStore = create((set, get) => ({
     } else {
       const peerId = receiver?._id || caller?._id;
       if (emitSocket && socket && peerId) {
-        socket.emit('end_call', { to: peerId, chatId });
+        socket.emit('end_call', {
+          to: peerId,
+          chatId,
+          callType: callType || 'audio',
+          duration: callDuration,
+          status: callDuration > 0 ? 'completed' : 'missed',
+        });
       }
 
-      if (peerId && callDuration > 0) {
+      if (peerId) {
         try {
           await api.post('/calls', {
             receiverId: peerId,
             chatId,
             callType,
-            status: 'completed',
+            status: callDuration > 0 ? 'completed' : 'missed',
             duration: callDuration,
           });
         } catch (e) {}

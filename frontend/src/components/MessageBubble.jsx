@@ -12,6 +12,8 @@ import {
   FileText,
   Download,
   Lock,
+  Phone,
+  Video,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuthStore } from '../store/useAuthStore';
@@ -179,21 +181,61 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
           </div>
         )}
 
-        {/* Message Text */}
-        <div className="break-words text-sm whitespace-pre-wrap leading-relaxed">
-          {isDeleted ? (
-            <span className="italic text-wa-text-secondary text-xs">
-              🚫 {message.content}
-            </span>
-          ) : (
-            <>
-              {isEncrypted && (
-                <Lock className="w-3.5 h-3.5 inline mr-1.5 text-wa-green" />
+        {/* Real WhatsApp Call Log Bubble */}
+        {message.fileType === 'call' && (
+          <div className="flex items-center gap-3 py-1 min-w-[200px]">
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                message.callDetails?.status === 'missed' || message.callDetails?.status === 'declined'
+                  ? 'bg-red-500/15 text-red-500'
+                  : 'bg-wa-green/15 text-wa-green'
+              }`}
+            >
+              {message.callDetails?.callType === 'video' ? (
+                <Video className="w-5 h-5" />
+              ) : (
+                <Phone className="w-5 h-5" />
               )}
-              {message.content}
-            </>
-          )}
-        </div>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <span
+                className={`text-sm font-semibold block ${
+                  message.callDetails?.status === 'missed' || message.callDetails?.status === 'declined'
+                    ? 'text-red-400'
+                    : 'text-wa-text-primary'
+                }`}
+              >
+                {message.content}
+              </span>
+              <p className="text-xs text-wa-text-secondary mt-0.5">
+                {message.callDetails?.status === 'completed' && message.callDetails?.duration > 0
+                  ? `${Math.floor(message.callDetails.duration / 60)}m ${message.callDetails.duration % 60}s`
+                  : message.callDetails?.status === 'declined'
+                  ? 'Call declined'
+                  : 'No answer'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Message Text */}
+        {message.fileType !== 'call' && (
+          <div className="break-words text-sm whitespace-pre-wrap leading-relaxed">
+            {isDeleted ? (
+              <span className="italic text-wa-text-secondary text-xs">
+                🚫 {message.content}
+              </span>
+            ) : (
+              <>
+                {isEncrypted && (
+                  <Lock className="w-3.5 h-3.5 inline mr-1.5 text-wa-green" />
+                )}
+                {message.content}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Metadata Footer: Timestamp, Star, Status ticks */}
         <div className="flex items-center justify-end gap-1.5 mt-1 select-none text-[11px] text-wa-text-secondary">
