@@ -1,15 +1,16 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_SERVER_URL =
-  process.env.NODE_ENV === 'production'
+const BACKEND_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD
     ? window.location.origin
-    : `http://${window.location.hostname}:5000`;
+    : `http://${window.location.hostname}:5000`);
 
 let socket = null;
 
 export const initSocket = (user) => {
   if (!socket && user) {
-    socket = io(SOCKET_SERVER_URL, {
+    socket = io(BACKEND_URL, {
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
       transports: ['websocket', 'polling'],
