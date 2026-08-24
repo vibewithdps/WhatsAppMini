@@ -23,9 +23,14 @@ export const StatusViewerModal = () => {
   const story = activeViewingGroup?.stories[activeStoryIndex];
   const isMyStory = activeViewingGroup?.user?._id === user?._id;
 
+  // Reset viewers pane when changing stories
+  useEffect(() => {
+    setShowViewers(false);
+  }, [activeStoryIndex]);
+
   // Auto progression timer (5s per story)
   useEffect(() => {
-    if (!isViewerModalOpen || !story || isPaused) return;
+    if (!isViewerModalOpen || !story || isPaused || showViewers) return;
 
     setProgress(0);
     const interval = 50; // ms
@@ -180,14 +185,59 @@ export const StatusViewerModal = () => {
 
           {isMyStory && (
             <button
-              onClick={() => setShowViewers(!showViewers)}
-              className="flex items-center gap-1.5 text-xs text-white/80 hover:text-white py-1 px-3 bg-white/20 rounded-full"
+              onClick={() => setShowViewers(true)}
+              className="flex items-center gap-1.5 text-xs text-white/80 hover:text-white py-1.5 px-4 bg-black/40 hover:bg-black/60 transition-colors backdrop-blur-md rounded-full shadow-lg border border-white/10"
             >
               <Eye className="w-4 h-4" />
-              <span>{story.viewers?.length || 0} views</span>
+              <span className="font-semibold">{story.viewers?.length || 0} views</span>
             </button>
           )}
         </div>
+
+        {/* Viewers Bottom Sheet */}
+        {showViewers && (
+          <div className="absolute inset-x-0 bottom-0 top-1/2 bg-wa-dark-panel z-30 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-slide-up border-t border-wa-dark-border">
+            <div className="flex items-center justify-between p-4 border-b border-wa-dark-border">
+              <h3 className="text-wa-text-primary font-bold flex items-center gap-2">
+                <Eye className="w-5 h-5 text-wa-green" />
+                Viewed by {story.viewers?.length || 0}
+              </h3>
+              <button
+                onClick={() => setShowViewers(false)}
+                className="p-1.5 bg-wa-dark-bg hover:bg-wa-dark-hover rounded-full text-wa-text-secondary"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-2">
+              {story.viewers?.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-wa-text-secondary">
+                  <Eye className="w-12 h-12 mb-3 opacity-20" />
+                  <p>No views yet</p>
+                </div>
+              ) : (
+                story.viewers?.map((v, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 hover:bg-wa-dark-bg/50 rounded-xl transition-colors">
+                    <img
+                      src={v.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                      alt={v.user?.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-wa-text-primary">
+                        {v.user?.name || 'Unknown User'}
+                      </p>
+                      <p className="text-xs text-wa-text-secondary">
+                        {formatDistanceToNow(new Date(v.viewedAt), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
