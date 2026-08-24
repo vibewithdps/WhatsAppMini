@@ -76,10 +76,13 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  sendMessage: async ({ content, file, replyToId, encrypted, fileType }) => {
+  sendMessage: async ({ content, file, fileUrl: customFileUrl, replyToId, encrypted, fileType }) => {
     const activeChat = get().activeChat;
-    const user = useAuthStore.getState().user;
+    const user = useAuthStore.getState().user || JSON.parse(localStorage.getItem('wa_user') || 'null');
     if (!activeChat || !user) return;
+
+    const chatId = activeChat._id || activeChat.id;
+    if (!chatId) return;
 
     // Instant 0ms Optimistic UI Message
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -87,7 +90,7 @@ export const useChatStore = create((set, get) => ({
       _id: tempId,
       sender: user,
       content: content || '',
-      fileUrl: file ? URL.createObjectURL(file) : null,
+      fileUrl: customFileUrl || (file ? URL.createObjectURL(file) : null),
       fileType: fileType || (file ? (file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'document') : null),
       fileName: file?.name || null,
       fileSize: file?.size || null,
@@ -108,20 +111,32 @@ export const useChatStore = create((set, get) => ({
     }));
 
     playMessageSentSound();
-    get().updateChatLatestMessage(activeChat._id, optimisticMessage);
+    get().updateChatLatestMessage(chatId, optimisticMessage);
 
     try {
-      const formData = new FormData();
-      formData.append('chatId', activeChat._id);
-      if (content) formData.append('content', content);
-      if (file) formData.append('file', file);
-      if (replyToId) formData.append('replyToId', replyToId);
-      if (encrypted) formData.append('encrypted', encrypted);
-      if (fileType) formData.append('fileType', fileType);
+      let res;
+      if (file) {
+        const formData = new FormData();
+        formData.append('chatId', chatId);
+        if (content) formData.append('content', content);
+        formData.append('file', file);
+        if (replyToId) formData.append('replyToId', replyToId);
+        if (encrypted) formData.append('encrypted', encrypted);
+        if (fileType) formData.append('fileType', fileType);
 
-      const res = await api.post('/messages', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+        res = await api.post('/messages', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        res = await api.post('/messages', {
+          chatId,
+          content: content || '',
+          replyToId,
+          encrypted,
+          fileType,
+          fileUrl: customFileUrl,
+        });
+      }
 
       const newMessage = res.data;
 
@@ -136,15 +151,11 @@ export const useChatStore = create((set, get) => ({
         socket.emit('send_message', newMessage);
       }
 
-      get().updateChatLatestMessage(activeChat._id, newMessage);
+      get().updateChatLatestMessage(chatId, newMessage);
       return newMessage;
     } catch (err) {
       console.error('Failed to send message:', err);
-      // Remove failed optimistic message
-      set((state) => ({
-        messages: state.messages.filter((m) => m._id !== tempId),
-      }));
-      throw err;
+      // Keep optimistic message or update status
     }
   },
 

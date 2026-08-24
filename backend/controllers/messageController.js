@@ -10,7 +10,7 @@ import { uploadMedia } from '../config/cloudinary.js';
  * @access Private
  */
 export const sendMessage = asyncHandler(async (req, res) => {
-  const { content, chatId, replyToId, encrypted, fileType: customFileType } = req.body;
+  const { content, chatId, replyToId, encrypted, fileType: customFileType, fileUrl: customFileUrl } = req.body;
 
   if (!chatId) {
     res.status(400);
@@ -23,7 +23,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     throw new Error('Chat not found');
   }
 
-  let fileUrl = null;
+  let fileUrl = customFileUrl || null;
   let fileType = customFileType || null;
   let fileName = null;
   let fileSize = null;
