@@ -85,6 +85,21 @@ export const sendMessage = asyncHandler(async (req, res) => {
 
   await Chat.findByIdAndUpdate(chatId, { latestMessage: message._id });
 
+  // Real-time broadcast via Socket.io to chat room and individual users
+  const io = req.app.get('io');
+  if (io && message.chat) {
+    io.to(chatId.toString()).emit('message_received', message);
+
+    if (Array.isArray(message.chat.users)) {
+      message.chat.users.forEach((u) => {
+        const uId = (u._id || u).toString();
+        if (uId !== req.user._id.toString()) {
+          io.to(uId).emit('message_received', message);
+        }
+      });
+    }
+  }
+
   res.status(201).json(message);
 });
 

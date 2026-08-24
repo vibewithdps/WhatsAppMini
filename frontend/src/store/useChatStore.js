@@ -78,7 +78,37 @@ export const useChatStore = create((set, get) => ({
 
   sendMessage: async ({ content, file, replyToId, encrypted, fileType }) => {
     const activeChat = get().activeChat;
-    if (!activeChat) return;
+    const user = useAuthStore.getState().user;
+    if (!activeChat || !user) return;
+
+    // Instant 0ms Optimistic UI Message
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const optimisticMessage = {
+      _id: tempId,
+      sender: user,
+      content: content || '',
+      fileUrl: file ? URL.createObjectURL(file) : null,
+      fileType: fileType || (file ? (file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'document') : null),
+      fileName: file?.name || null,
+      fileSize: file?.size || null,
+      chat: activeChat,
+      createdAt: new Date().toISOString(),
+      readBy: [{ user: user._id, timestamp: new Date() }],
+      deliveredTo: [{ user: user._id, timestamp: new Date() }],
+      replyTo: get().quotedMessage,
+      encrypted: Boolean(encrypted),
+      isOptimistic: true,
+    };
+
+    set((state) => ({
+      messages: [...state.messages, optimisticMessage],
+      quotedMessage: null,
+      pendingMediaFile: null,
+      isMediaPreviewOpen: false,
+    }));
+
+    playMessageSentSound();
+    get().updateChatLatestMessage(activeChat._id, optimisticMessage);
 
     try {
       const formData = new FormData();
@@ -95,16 +125,10 @@ export const useChatStore = create((set, get) => ({
 
       const newMessage = res.data;
 
-      // Add to messages list
+      // Replace optimistic message with actual persisted message
       set((state) => ({
-        messages: [...state.messages, newMessage],
-        quotedMessage: null,
-        pendingMediaFile: null,
-        isMediaPreviewOpen: false,
+        messages: state.messages.map((m) => (m._id === tempId ? newMessage : m)),
       }));
-
-      // Play audio effect
-      playMessageSentSound();
 
       // Emit via socket
       const socket = getSocket();
@@ -112,19 +136,21 @@ export const useChatStore = create((set, get) => ({
         socket.emit('send_message', newMessage);
       }
 
-      // Update chat list latest message
       get().updateChatLatestMessage(activeChat._id, newMessage);
-
       return newMessage;
     } catch (err) {
       console.error('Failed to send message:', err);
+      // Remove failed optimistic message
+      set((state) => ({
+        messages: state.messages.filter((m) => m._id !== tempId),
+      }));
       throw err;
     }
   },
 
   receiveMessage: (message) => {
     const activeChat = get().activeChat;
-    const isCurrentChat = activeChat && activeChat._id === message.chat._id;
+    const isCurrentChat = activeChat && (activeChat._id === message.chat?._id || activeChat._id === message.chat);
 
     if (isCurrentChat) {
       set((state) => {
@@ -132,11 +158,14 @@ export const useChatStore = create((set, get) => ({
         if (state.messages.some((m) => m._id === message._id)) return state;
         return { messages: [...state.messages, message] };
       });
-      get().markChatAsRead(message.chat._id);
+      get().markChatAsRead(activeChat._id);
     }
 
     playMessageReceivedSound();
-    get().updateChatLatestMessage(message.chat._id, message);
+    const chatId = message.chat?._id || message.chat;
+    if (chatId) {
+      get().updateChatLatestMessage(chatId, message);
+    }
   },
 
   updateChatLatestMessage: (chatId, message) => {

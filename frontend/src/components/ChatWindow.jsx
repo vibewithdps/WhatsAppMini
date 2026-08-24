@@ -128,9 +128,9 @@ export const ChatWindow = ({ onBack }) => {
   };
 
   return (
-    <div className="flex-1 h-full flex flex-col bg-wa-dark-bg dark:bg-wa-dark-bg bg-wa-light-bg relative">
+    <div className="flex-1 h-full w-full flex flex-col min-h-0 bg-wa-dark-bg dark:bg-wa-dark-bg bg-wa-light-bg relative overflow-hidden">
       {/* Chat Header */}
-      <div className="px-4 py-2.5 bg-wa-dark-header dark:bg-wa-dark-header bg-wa-light-header border-b border-wa-dark-border dark:border-wa-dark-border border-wa-light-border flex items-center justify-between z-10">
+      <div className="flex-shrink-0 px-3 sm:px-4 py-2.5 bg-wa-dark-header dark:bg-wa-dark-header bg-wa-light-header border-b border-wa-dark-border dark:border-wa-dark-border border-wa-light-border flex items-center justify-between z-10">
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => {
@@ -248,7 +248,7 @@ export const ChatWindow = ({ onBack }) => {
       )}
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-12 py-4 space-y-1 wa-chat-bg-dark dark:wa-chat-bg-dark wa-chat-bg-light">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-8 py-3 space-y-1 wa-chat-bg-dark dark:wa-chat-bg-dark wa-chat-bg-light overscroll-contain">
         {/* Disappearing Messages Notice */}
         {activeChat.disappearingMessagesTimer > 0 && (
           <div className="flex justify-center my-2">
@@ -303,8 +303,10 @@ export const ChatWindow = ({ onBack }) => {
         onDismiss={() => setQuotedMessage(null)}
       />
 
-      {/* Message Input Bar */}
-      <MessageInput />
+      {/* Message Input Bar Pinned */}
+      <div className="flex-shrink-0 z-20">
+        <MessageInput />
+      </div>
 
       {/* Media Preview Modal */}
       <MediaPreviewModal />

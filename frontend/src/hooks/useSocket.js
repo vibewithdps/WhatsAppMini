@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useChatStore } from '../store/useChatStore';
 import { useCallStore } from '../store/useCallStore';
 import { stopIncomingRingtone } from '../services/audio';
+import api from '../services/api';
 
 export const useSocket = () => {
   const user = useAuthStore((state) => state.user);
@@ -64,7 +65,22 @@ export const useSocket = () => {
       endActiveCall(false);
     });
 
+    // Smart background auto-sync polling every 3 seconds (fail-safe for mobile background & network reconnects)
+    const syncInterval = setInterval(async () => {
+      const activeChat = useChatStore.getState().activeChat;
+      if (activeChat) {
+        try {
+          const res = await api.get(`/messages/${activeChat._id}`);
+          const currentMsgs = useChatStore.getState().messages;
+          if (res.data && res.data.length !== currentMsgs.length) {
+            useChatStore.setState({ messages: res.data });
+          }
+        } catch (e) {}
+      }
+    }, 3000);
+
     return () => {
+      clearInterval(syncInterval);
       socket.off('all_online_users');
       socket.off('user_status');
       socket.off('message_received');
@@ -72,6 +88,7 @@ export const useSocket = () => {
       socket.off('typing');
       socket.off('stop_typing');
       socket.off('incoming_call');
+      socket.off('incoming_group_call');
       socket.off('call_ended');
       socket.off('call_rejected');
     };
