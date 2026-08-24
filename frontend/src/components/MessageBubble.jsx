@@ -231,7 +231,40 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
                 {isEncrypted && (
                   <Lock className="w-3.5 h-3.5 inline mr-1.5 text-wa-green" />
                 )}
-                {message.content}
+                {message.content && message.content.startsWith('📍 Live Location:') ? (
+                  <div className="flex flex-col gap-2 mt-1">
+                    <a
+                      href={message.content.split('📍 Live Location: ')[1]}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block relative overflow-hidden rounded-xl bg-wa-dark-bg/50 border border-wa-dark-border group"
+                    >
+                      <img
+                        src={`https://staticmap.openstreetmap.de/staticmap.php?center=${message.content.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[1]},${message.content.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[2]}&zoom=15&size=400x200&markers=${message.content.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[1]},${message.content.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[2]}`}
+                        alt="Map Preview"
+                        className="w-full h-32 md:h-40 object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                        onError={(e) => {
+                          e.target.src = 'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&h=200&fit=crop';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="px-4 py-1.5 bg-wa-green text-white text-xs font-bold rounded-full shadow-lg">
+                          Open Map
+                        </span>
+                      </div>
+                    </a>
+                    <a
+                      href={message.content.split('📍 Live Location: ')[1]}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-wa-blue-tick hover:underline text-xs"
+                    >
+                      {message.content.split('📍 Live Location: ')[1]}
+                    </a>
+                  </div>
+                ) : (
+                  message.content
+                )}
               </>
             )}
           </div>
