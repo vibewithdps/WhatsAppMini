@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import api from '../services/api';
 import { getSocket } from '../services/socket';
 import { playMessageSentSound, playMessageReceivedSound } from '../services/audio';
+import { useAuthStore } from './useAuthStore';
 
 export const useChatStore = create((set, get) => ({
   chats: [],
@@ -79,25 +80,35 @@ export const useChatStore = create((set, get) => ({
   sendMessage: async ({ content, file, fileUrl: customFileUrl, replyToId, encrypted, fileType }) => {
     const activeChat = get().activeChat;
     const user = useAuthStore.getState().user || JSON.parse(localStorage.getItem('wa_user') || 'null');
-    if (!activeChat || !user) return;
+    if (!activeChat) {
+      console.warn('[sendMessage] No active chat selected');
+      return;
+    }
 
-    const chatId = activeChat._id || activeChat.id;
+    const chatId = (activeChat._id || activeChat.id)?.toString();
     if (!chatId) return;
 
-    // Instant 0ms Optimistic UI Message
+    let resolvedFileType = fileType || null;
+    if (file) {
+      if (file.type.startsWith('image/')) resolvedFileType = 'image';
+      else if (file.type.startsWith('video/')) resolvedFileType = 'video';
+      else if (file.type.startsWith('audio/')) resolvedFileType = 'audio';
+      else resolvedFileType = 'document';
+    }
+
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const optimisticMessage = {
       _id: tempId,
-      sender: user,
+      sender: user || { name: 'You', _id: 'self' },
       content: content || '',
       fileUrl: customFileUrl || (file ? URL.createObjectURL(file) : null),
-      fileType: fileType || (file ? (file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'document') : null),
+      fileType: resolvedFileType,
       fileName: file?.name || null,
       fileSize: file?.size || null,
       chat: activeChat,
       createdAt: new Date().toISOString(),
-      readBy: [{ user: user._id, timestamp: new Date() }],
-      deliveredTo: [{ user: user._id, timestamp: new Date() }],
+      readBy: user ? [{ user: user._id, timestamp: new Date() }] : [],
+      deliveredTo: user ? [{ user: user._id, timestamp: new Date() }] : [],
       replyTo: get().quotedMessage,
       encrypted: Boolean(encrypted),
       isOptimistic: true,
@@ -122,7 +133,7 @@ export const useChatStore = create((set, get) => ({
         formData.append('file', file);
         if (replyToId) formData.append('replyToId', replyToId);
         if (encrypted) formData.append('encrypted', encrypted);
-        if (fileType) formData.append('fileType', fileType);
+        if (resolvedFileType) formData.append('fileType', resolvedFileType);
 
         res = await api.post('/messages', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -132,9 +143,9 @@ export const useChatStore = create((set, get) => ({
           chatId,
           content: content || '',
           replyToId,
-          encrypted,
-          fileType,
-          fileUrl: customFileUrl,
+          encrypted: Boolean(encrypted),
+          fileType: resolvedFileType,
+          fileUrl: customFileUrl || null,
         });
       }
 
@@ -154,8 +165,7 @@ export const useChatStore = create((set, get) => ({
       get().updateChatLatestMessage(chatId, newMessage);
       return newMessage;
     } catch (err) {
-      console.error('Failed to send message:', err);
-      // Keep optimistic message or update status
+      console.error('[sendMessage error]:', err?.response?.data || err.message);
     }
   },
 
@@ -167,7 +177,10 @@ export const useChatStore = create((set, get) => ({
       set((state) => {
         // Prevent duplicate messages
         if (state.messages.some((m) => m._id === message._id)) return state;
-        return { messages: [...state.messages, message] };
+        const filtered = state.messages.filter(
+          (m) => !(m.isOptimistic && m.content === message.content && m.sender?._id === message.sender?._id)
+        );
+        return { messages: [...filtered, message] };
       });
       get().markChatAsRead(activeChat._id);
     }
@@ -194,142 +207,115 @@ export const useChatStore = create((set, get) => ({
     });
   },
 
-  markChatAsRead: async (chatId) => {
-    try {
-      await api.put(`/messages/read/${chatId}`);
-      const socket = getSocket();
-      const user = JSON.parse(localStorage.getItem('wa_user') || '{}');
-      if (socket && user._id) {
-        socket.emit('mark_read', { chatId, userId: user._id });
-      }
-    } catch (e) {}
-  },
-
-  handleReadReceipt: (chatId, readByUserId) => {
-    set((state) => {
-      if (state.activeChat?._id === chatId) {
-        const updatedMessages = state.messages.map((msg) => {
-          if (!msg.readBy.some((r) => r.user === readByUserId || r.user?._id === readByUserId)) {
-            return {
-              ...msg,
-              readBy: [...msg.readBy, { user: readByUserId, timestamp: new Date() }],
-            };
-          }
-          return msg;
-        });
-        return { messages: updatedMessages };
-      }
-      return state;
-    });
-  },
-
   reactToMessage: async (messageId, emoji) => {
     try {
       const res = await api.put(`/messages/react/${messageId}`, { emoji });
-      const updatedMsg = res.data;
-
       set((state) => ({
-        messages: state.messages.map((m) => (m._id === messageId ? updatedMsg : m)),
+        messages: state.messages.map((m) => (m._id === messageId ? res.data : m)),
       }));
 
       const socket = getSocket();
-      if (socket && get().activeChat) {
-        socket.emit('message_reaction', {
-          chatId: get().activeChat._id,
+      if (socket) {
+        socket.emit('react_message', {
           messageId,
-          reactions: updatedMsg.reactions,
+          reactions: res.data.reactions,
+          chatId: get().activeChat?._id,
         });
       }
     } catch (err) {
-      console.error('Failed to react:', err);
+      console.error('Failed to react to message:', err);
     }
   },
 
   toggleStarMessage: async (messageId) => {
     try {
       const res = await api.put(`/messages/star/${messageId}`);
-      const { isStarred } = res.data;
-      const user = JSON.parse(localStorage.getItem('wa_user') || '{}');
-
       set((state) => ({
-        messages: state.messages.map((m) => {
-          if (m._id === messageId) {
-            const stars = isStarred
-              ? [...(m.isStarred || []), user._id]
-              : (m.isStarred || []).filter((id) => id !== user._id);
-            return { ...m, isStarred: stars };
-          }
-          return m;
-        }),
+        messages: state.messages.map((m) => (m._id === messageId ? res.data : m)),
       }));
     } catch (err) {
       console.error('Failed to star message:', err);
     }
   },
 
-  deleteMessage: async (messageId, type = 'forMe') => {
+  deleteMessage: async (messageId, forEveryone = false) => {
     try {
-      await api.delete(`/messages/${messageId}`, { data: { type } });
-
-      set((state) => {
-        if (type === 'forEveryone') {
-          return {
-            messages: state.messages.map((m) =>
-              m._id === messageId
-                ? { ...m, isDeletedForEveryone: true, content: 'This message was deleted', fileUrl: null }
-                : m
-            ),
-          };
-        } else {
-          return {
-            messages: state.messages.filter((m) => m._id !== messageId),
-          };
-        }
+      await api.delete(`/messages/${messageId}`, {
+        params: { forEveryone },
       });
 
-      const socket = getSocket();
-      if (socket && get().activeChat) {
-        socket.emit('message_deleted', {
-          chatId: get().activeChat._id,
-          messageId,
-          type,
-          isDeletedForEveryone: type === 'forEveryone',
-        });
+      if (forEveryone) {
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m._id === messageId
+              ? { ...m, isDeletedForEveryone: true, content: 'This message was deleted' }
+              : m
+          ),
+        }));
+
+        const socket = getSocket();
+        if (socket) {
+          socket.emit('delete_message', {
+            messageId,
+            chatId: get().activeChat?._id,
+          });
+        }
+      } else {
+        set((state) => ({
+          messages: state.messages.filter((m) => m._id !== messageId),
+        }));
       }
     } catch (err) {
       console.error('Failed to delete message:', err);
     }
   },
 
-  setTyping: (chatId, user, isTyping) => {
-    set((state) => {
-      const currentList = state.typingUsers[chatId] || [];
-      let updated;
-      if (isTyping) {
-        if (!currentList.some((u) => u.userId === user.userId)) {
-          updated = [...currentList, user];
-        } else {
-          updated = currentList;
-        }
-      } else {
-        updated = currentList.filter((u) => u.userId !== user.userId);
+  markChatAsRead: async (chatId) => {
+    try {
+      await api.put(`/messages/read/${chatId}`);
+      const socket = getSocket();
+      if (socket) {
+        socket.emit('read_messages', { chatId });
       }
-      return {
-        typingUsers: { ...state.typingUsers, [chatId]: updated },
-      };
+    } catch (err) {
+      console.error('Failed to mark read:', err);
+    }
+  },
+
+  handleReadReceipt: (chatId, readByUserId) => {
+    set((state) => {
+      if (state.activeChat?._id === chatId) {
+        return {
+          messages: state.messages.map((m) => ({
+            ...m,
+            readBy: [...(m.readBy || []), { user: readByUserId, timestamp: new Date() }],
+          })),
+        };
+      }
+      return state;
     });
   },
 
-  setOnlineUsers: (userList) => {
-    set({ onlineUsers: new Set(userList) });
+  setTyping: (chatId, user, isTyping) => {
+    set((state) => {
+      const current = state.typingUsers[chatId] || [];
+      const updated = isTyping
+        ? [...current.filter((u) => u.userId !== user.userId), user]
+        : current.filter((u) => u.userId !== user.userId);
+      return { typingUsers: { ...state.typingUsers, [chatId]: updated } };
+    });
+  },
+
+  setOnlineUsers: (list) => {
+    set({ onlineUsers: new Set(list) });
   },
 
   setUserStatus: (userId, isOnline) => {
     set((state) => {
-      const nextOnline = new Set(state.onlineUsers);
-      if (isOnline) nextOnline.add(userId);
-      else nextOnline.delete(userId);
-      return { onlineUsers: nextOnline };
+      const newOnline = new Set(state.onlineUsers);
+      if (isOnline) newOnline.add(userId);
+      else newOnline.delete(userId);
+      return { onlineUsers: newOnline };
     });
   },
 }));

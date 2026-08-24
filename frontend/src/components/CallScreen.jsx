@@ -132,7 +132,7 @@ export const CallScreen = () => {
       </div>
 
       {/* Center Stage: Video Display or Audio Presentation */}
-      <div className="flex-1 relative flex items-center justify-center my-2 sm:my-3 overflow-hidden rounded-3xl bg-black/60 border border-wa-dark-border">
+      <div className="flex-1 relative flex items-center justify-center my-2 sm:my-3 overflow-hidden rounded-3xl bg-black/80 border border-wa-dark-border">
         {isGroupCall ? (
           /* Multi-Participant Group Call Grid */
           <div className="w-full h-full p-2 sm:p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 overflow-y-auto">
@@ -140,12 +140,7 @@ export const CallScreen = () => {
             <div className="relative rounded-2xl overflow-hidden bg-wa-dark-panel border border-wa-dark-border flex items-center justify-center min-h-[160px] shadow-lg">
               {callType === 'video' && !isCameraOff ? (
                 <video
-                  ref={(el) => {
-                    if (el && localStream) {
-                      el.srcObject = localStream;
-                      el.play().catch(() => {});
-                    }
-                  }}
+                  ref={localVideoRef}
                   autoPlay
                   playsInline
                   muted
@@ -203,20 +198,21 @@ export const CallScreen = () => {
             ))}
           </div>
         ) : callType === 'video' ? (
-          /* 1-on-1 Video Call Layout */
-          <>
-            {/* Remote Full Video */}
+          /* 1-on-1 Video Call Layout - Always Keep <video> Mounted */
+          <div className="w-full h-full relative flex items-center justify-center">
+            {/* Remote Full Video Surface */}
             <video
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className={`w-full h-full object-cover rounded-3xl transition-opacity duration-300 ${
-                remoteStream ? 'opacity-100' : 'opacity-0 absolute'
+              className={`w-full h-full object-cover rounded-3xl bg-black transition-opacity duration-500 ${
+                remoteStream && remoteStream.getVideoTracks().length > 0 ? 'opacity-100 z-10' : 'opacity-0 z-0 absolute'
               }`}
             />
 
-            {!remoteStream && (
-              <div className="flex flex-col items-center gap-4 text-center p-4">
+            {/* Ringing / Connecting Peer Placeholder */}
+            {(!remoteStream || remoteStream.getVideoTracks().length === 0) && (
+              <div className="flex flex-col items-center gap-4 text-center p-4 z-10">
                 <div className="relative">
                   <div className="w-24 h-24 rounded-full bg-wa-green/20 animate-ping absolute inset-0" />
                   <img
@@ -254,7 +250,7 @@ export const CallScreen = () => {
                 </div>
               )}
             </div>
-          </>
+          </div>
         ) : (
           /* 1-on-1 Voice Call Presentation */
           <div className="flex flex-col items-center gap-6 p-4">
