@@ -38,14 +38,32 @@ export const CallScreen = () => {
   const { toggleScreenShare, cleanupPeer } = useWebRTC();
 
   const remoteAudioRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const localVideoRef = useRef(null);
 
   // Auto-play remote audio stream
   useEffect(() => {
     if (remoteStream && remoteAudioRef.current) {
       remoteAudioRef.current.srcObject = remoteStream;
-      remoteAudioRef.current.play().catch(() => {});
+      remoteAudioRef.current.play().catch((e) => console.log('Audio autoplay:', e));
     }
   }, [remoteStream]);
+
+  // Auto-play remote video stream
+  useEffect(() => {
+    if (remoteStream && remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = remoteStream;
+      remoteVideoRef.current.play().catch((e) => console.log('Video autoplay:', e));
+    }
+  }, [remoteStream, callType]);
+
+  // Auto-play local video stream
+  useEffect(() => {
+    if (localStream && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.play().catch(() => {});
+    }
+  }, [localStream]);
 
   // Duration timer
   useEffect(() => {
@@ -75,8 +93,16 @@ export const CallScreen = () => {
     endActiveCall(true);
   };
 
+  const handleScreenTouchToPlay = () => {
+    if (remoteAudioRef.current) remoteAudioRef.current.play().catch(() => {});
+    if (remoteVideoRef.current) remoteVideoRef.current.play().catch(() => {});
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-wa-dark-bg flex flex-col justify-between p-3 sm:p-6 select-none animate-fade-in">
+    <div
+      onClick={handleScreenTouchToPlay}
+      className="fixed inset-0 z-50 bg-wa-dark-bg flex flex-col justify-between p-3 sm:p-6 select-none animate-fade-in"
+    >
       {/* Hidden Audio Player for Remote Audio Stream */}
       <audio ref={remoteAudioRef} autoPlay playsInline />
 
@@ -115,7 +141,7 @@ export const CallScreen = () => {
               {callType === 'video' && !isCameraOff ? (
                 <video
                   ref={(el) => {
-                    if (el && localStream && el.srcObject !== localStream) {
+                    if (el && localStream) {
                       el.srcObject = localStream;
                       el.play().catch(() => {});
                     }
@@ -149,7 +175,7 @@ export const CallScreen = () => {
                 {p.stream ? (
                   <video
                     ref={(el) => {
-                      if (el && p.stream && el.srcObject !== p.stream) {
+                      if (el && p.stream) {
                         el.srcObject = p.stream;
                         el.play().catch(() => {});
                       }
@@ -180,19 +206,16 @@ export const CallScreen = () => {
           /* 1-on-1 Video Call Layout */
           <>
             {/* Remote Full Video */}
-            {remoteStream && remoteStream.getVideoTracks().length > 0 ? (
-              <video
-                ref={(el) => {
-                  if (el && remoteStream && el.srcObject !== remoteStream) {
-                    el.srcObject = remoteStream;
-                    el.play().catch(() => {});
-                  }
-                }}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover rounded-3xl"
-              />
-            ) : (
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className={`w-full h-full object-cover rounded-3xl transition-opacity duration-300 ${
+                remoteStream ? 'opacity-100' : 'opacity-0 absolute'
+              }`}
+            />
+
+            {!remoteStream && (
               <div className="flex flex-col items-center gap-4 text-center p-4">
                 <div className="relative">
                   <div className="w-24 h-24 rounded-full bg-wa-green/20 animate-ping absolute inset-0" />
@@ -219,12 +242,7 @@ export const CallScreen = () => {
             {/* Local PIP Video (Self Camera) */}
             <div className="absolute bottom-3 right-3 w-28 h-40 sm:w-36 sm:h-48 md:w-48 md:h-64 bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-wa-dark-border z-20">
               <video
-                ref={(el) => {
-                  if (el && localStream && el.srcObject !== localStream) {
-                    el.srcObject = localStream;
-                    el.play().catch(() => {});
-                  }
-                }}
+                ref={localVideoRef}
                 autoPlay
                 playsInline
                 muted
@@ -250,50 +268,46 @@ export const CallScreen = () => {
                   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
                 }
                 alt={peer.name}
-                className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover ring-4 ring-wa-dark-border shadow-2xl"
+                className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover ring-8 ring-wa-dark-panel relative z-10 shadow-2xl"
               />
             </div>
             <div className="text-center">
-              <h2 className="text-xl sm:text-2xl font-bold text-wa-text-primary">
+              <h2 className="text-2xl font-bold text-wa-text-primary">
                 {peer.name}
               </h2>
-              <p className="text-sm text-wa-green font-medium mt-1.5">
-                {callStatus === 'calling' ? 'Ringing...' : 'Voice Call Active'}
+              <p className="text-sm text-wa-text-secondary mt-1">
+                {callStatus === 'calling' ? 'Ringing...' : 'Voice call in progress'}
               </p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom Floating Control Bar */}
-      <div className="flex items-center justify-center gap-3 sm:gap-4 py-2 pb-safe z-10">
-        {/* Toggle Mute */}
+      {/* Bottom Control Bar */}
+      <div className="flex items-center justify-center gap-4 sm:gap-6 z-10 pb-2 sm:pb-0">
+        {/* Toggle Microphone */}
         <button
           onClick={toggleMute}
-          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-lg ${
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
             isMuted
-              ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-              : 'bg-wa-dark-panel hover:bg-wa-dark-hover text-wa-text-primary border border-wa-dark-border'
+              ? 'bg-red-500 text-white'
+              : 'bg-wa-dark-panel hover:bg-wa-dark-hover text-wa-text-primary border border-wa-dark-border shadow'
           }`}
           title={isMuted ? 'Unmute' : 'Mute'}
         >
-          {isMuted ? (
-            <MicOff className="w-5 h-5 sm:w-6 sm:h-6" />
-          ) : (
-            <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
-          )}
+          {isMuted ? <MicOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <Mic className="w-5 h-5 sm:w-6 sm:h-6" />}
         </button>
 
-        {/* Toggle Video */}
+        {/* Toggle Video Camera */}
         {callType === 'video' && (
           <button
             onClick={toggleCamera}
-            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-lg ${
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
               isCameraOff
-                ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-                : 'bg-wa-dark-panel hover:bg-wa-dark-hover text-wa-text-primary border border-wa-dark-border'
+                ? 'bg-red-500 text-white'
+                : 'bg-wa-dark-panel hover:bg-wa-dark-hover text-wa-text-primary border border-wa-dark-border shadow'
             }`}
-            title={isCameraOff ? 'Turn Camera On' : 'Turn Camera Off'}
+            title={isCameraOff ? 'Turn on Camera' : 'Turn off Camera'}
           >
             {isCameraOff ? (
               <VideoOff className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -303,23 +317,25 @@ export const CallScreen = () => {
           </button>
         )}
 
-        {/* Screen Share (Desktop/Laptop) */}
-        <button
-          onClick={toggleScreenShare}
-          className={`hidden sm:flex w-12 h-12 sm:w-14 sm:h-14 rounded-full items-center justify-center transition-all active:scale-95 shadow-lg ${
-            isScreenSharing
-              ? 'bg-wa-green/20 text-wa-green border border-wa-green/40'
-              : 'bg-wa-dark-panel hover:bg-wa-dark-hover text-wa-text-primary border border-wa-dark-border'
-          }`}
-          title="Share Screen"
-        >
-          <ScreenShare className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
+        {/* Screen Share (Desktop) */}
+        {callType === 'video' && (
+          <button
+            onClick={toggleScreenShare}
+            className={`hidden md:flex w-12 h-12 sm:w-14 sm:h-14 rounded-full items-center justify-center transition-all ${
+              isScreenSharing
+                ? 'bg-wa-green text-white'
+                : 'bg-wa-dark-panel hover:bg-wa-dark-hover text-wa-text-primary border border-wa-dark-border shadow'
+            }`}
+            title={isScreenSharing ? 'Stop Screen Sharing' : 'Share Screen'}
+          >
+            <ScreenShare className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+        )}
 
-        {/* End Call / Hang Up */}
+        {/* End Call Button */}
         <button
           onClick={handleHangup}
-          className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-2xl transition-all active:scale-95"
+          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-lg transition-transform active:scale-95"
           title="End Call"
         >
           <PhoneOff className="w-6 h-6 sm:w-7 sm:h-7" />
