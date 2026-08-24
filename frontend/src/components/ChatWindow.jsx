@@ -128,9 +128,9 @@ export const ChatWindow = ({ onBack }) => {
   };
 
   return (
-    <div className="flex-1 h-full w-full flex flex-col min-h-0 bg-wa-dark-bg dark:bg-wa-dark-bg bg-wa-light-bg relative overflow-hidden">
+    <div className="fixed inset-0 lg:static lg:flex-1 h-full w-full flex flex-col justify-between overflow-hidden bg-wa-dark-bg dark:bg-wa-dark-bg bg-wa-light-bg z-30">
       {/* Chat Header */}
-      <div className="flex-shrink-0 px-3 sm:px-4 py-2.5 bg-wa-dark-header dark:bg-wa-dark-header bg-wa-light-header border-b border-wa-dark-border dark:border-wa-dark-border border-wa-light-border flex items-center justify-between z-10">
+      <div className="flex-shrink-0 px-3 sm:px-4 py-2.5 bg-wa-dark-header dark:bg-wa-dark-header bg-wa-light-header border-b border-wa-dark-border dark:border-wa-dark-border border-wa-light-border flex items-center justify-between z-10 shadow-sm">
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => {
@@ -303,8 +303,8 @@ export const ChatWindow = ({ onBack }) => {
         onDismiss={() => setQuotedMessage(null)}
       />
 
-      {/* Message Input Bar Pinned */}
-      <div className="flex-shrink-0 z-20">
+      {/* Message Input Bar Pinned at bottom */}
+      <div className="flex-shrink-0 w-full z-40 pb-safe">
         <MessageInput />
       </div>
 
