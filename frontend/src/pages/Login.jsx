@@ -221,7 +221,7 @@ export const Login = ({ onNavigateToOTP }) => {
                     1
                   </span>
                   <span>
-                    Open <b>WhatsApp_Mini</b> on your phone (<span className="text-cyan-400 font-mono text-[11px]">http://10.136.52.23:5173</span>) or scan with your <b>Phone Camera</b>
+                    Open <b>WhatsApp_Mini</b> on your phone or scan with your <b>Phone Camera</b>
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
