@@ -65,19 +65,30 @@ export const useSocket = () => {
       endActiveCall(false);
     });
 
-    // Smart background auto-sync polling every 3 seconds (fail-safe for mobile background & network reconnects)
+    // Safe background auto-sync polling every 4 seconds (preserves pending optimistic messages)
     const syncInterval = setInterval(async () => {
       const activeChat = useChatStore.getState().activeChat;
       if (activeChat) {
         try {
           const res = await api.get(`/messages/${activeChat._id}`);
-          const currentMsgs = useChatStore.getState().messages;
-          if (res.data && res.data.length !== currentMsgs.length) {
-            useChatStore.setState({ messages: res.data });
+          if (res.data && Array.isArray(res.data)) {
+            const serverMsgs = res.data;
+            const currentMsgs = useChatStore.getState().messages;
+            
+            const hasNewServerMsg = serverMsgs.some(
+              (sm) => !currentMsgs.some((cm) => cm._id === sm._id)
+            );
+
+            if (hasNewServerMsg) {
+              const pendingOptimistic = currentMsgs.filter(
+                (m) => m.isOptimistic || m._id?.startsWith('temp_')
+              );
+              useChatStore.setState({ messages: [...serverMsgs, ...pendingOptimistic] });
+            }
           }
         } catch (e) {}
       }
-    }, 3000);
+    }, 4000);
 
     return () => {
       clearInterval(syncInterval);
