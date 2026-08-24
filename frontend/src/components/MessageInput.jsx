@@ -117,7 +117,7 @@ export const MessageInput = () => {
   };
 
   return (
-    <div className="px-2 sm:px-4 py-2.5 sm:py-3 bg-wa-dark-header dark:bg-wa-dark-header bg-wa-light-header border-t border-wa-dark-border dark:border-wa-dark-border border-wa-light-border relative">
+    <div className="w-full px-2 sm:px-4 pt-2 pb-4 sm:py-3 bg-wa-dark-header dark:bg-wa-dark-header bg-wa-light-header border-t border-wa-dark-border dark:border-wa-dark-border border-wa-light-border relative z-30 shadow-lg flex-shrink-0">
       {/* Emoji Picker Popup */}
       {showEmojiPicker && (
         <div className="absolute bottom-full mb-3 left-2 sm:left-4 z-50 shadow-2xl max-w-[calc(100vw-16px)]">
