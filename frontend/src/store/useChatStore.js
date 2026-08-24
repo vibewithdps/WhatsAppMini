@@ -181,6 +181,18 @@ export const useChatStore = create((set, get) => ({
         return { messages: [...filtered, message] };
       });
       get().markChatAsRead(activeChat._id);
+    } else {
+      // Chat is not open -> Emit Delivery Receipt to sender
+      const socket = getSocket();
+      const me = useAuthStore.getState().user;
+      if (socket && me && message.sender?._id !== me._id) {
+        socket.emit('message_delivered', {
+          messageId: message._id,
+          chatId: message.chat?._id || message.chat,
+          senderId: message.sender?._id || message.sender,
+          recipientId: me._id,
+        });
+      }
     }
 
     playMessageReceivedSound();
@@ -288,6 +300,25 @@ export const useChatStore = create((set, get) => ({
             ...m,
             readBy: [...(m.readBy || []), { user: readByUserId, timestamp: new Date() }],
           })),
+        };
+      }
+      return state;
+    });
+  },
+
+  handleDeliveryReceipt: (chatId, messageId, deliveredToUserId) => {
+    set((state) => {
+      if (state.activeChat?._id === chatId) {
+        return {
+          messages: state.messages.map((m) => {
+            if (m._id === messageId || !messageId) {
+              return {
+                ...m,
+                deliveredTo: [...(m.deliveredTo || []), { user: deliveredToUserId, timestamp: new Date() }],
+              };
+            }
+            return m;
+          }),
         };
       }
       return state;

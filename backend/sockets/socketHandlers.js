@@ -104,15 +104,25 @@ export const setupSocketHandlers = (io) => {
     /**
      * Read Receipts (Blue Ticks) & Delivery Confirmations
      */
-    socket.on('mark_read', async ({ chatId, userId, messageIds }) => {
+    socket.on('read_messages', ({ chatId }) => {
       socket.to(chatId).emit('messages_read_receipt', {
         chatId,
-        readByUserId: userId,
+        readByUserId: currentUserId,
         readAt: new Date(),
       });
     });
 
-    socket.on('message_delivered', ({ messageId, chatId, senderId, recipientId }) => {
+    socket.on('message_delivered', async ({ messageId, chatId, senderId, recipientId }) => {
+      try {
+        await Message.findByIdAndUpdate(messageId, {
+          $addToSet: {
+            deliveredTo: { user: recipientId, timestamp: new Date() },
+          },
+        });
+      } catch (err) {
+        console.error('Failed to update delivered receipt in DB:', err);
+      }
+
       socket.to(senderId).emit('message_delivered_receipt', {
         messageId,
         chatId,

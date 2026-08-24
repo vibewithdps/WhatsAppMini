@@ -38,6 +38,10 @@ export const useSocket = () => {
       handleReadReceipt(chatId, readByUserId);
     });
 
+    socket.on('message_delivered_receipt', ({ chatId, messageId, deliveredToUserId }) => {
+      useChatStore.getState().handleDeliveryReceipt(chatId, messageId, deliveredToUserId);
+    });
+
     socket.on('typing', ({ chatId, user: typingUser }) => {
       setTyping(chatId, typingUser, true);
     });
@@ -96,6 +100,7 @@ export const useSocket = () => {
       socket.off('user_status');
       socket.off('message_received');
       socket.off('messages_read_receipt');
+      socket.off('message_delivered_receipt');
       socket.off('typing');
       socket.off('stop_typing');
       socket.off('incoming_call');
