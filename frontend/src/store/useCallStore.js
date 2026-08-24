@@ -26,7 +26,7 @@ export const useCallStore = create((set, get) => ({
   setCallStatus: (status) => set({ callStatus: status }),
   setCallType: (type) => set({ callType: type }),
   setLocalStream: (stream) => set({ localStream: stream }),
-  setRemoteStream: (stream) => set({ remoteStream: stream }),
+  setRemoteStream: (stream) => set({ remoteStream: stream, streamUpdateTs: Date.now() }),
   setCallDuration: (duration) => set({ callDuration: duration }),
 
   addGroupPeer: ({ socketId, user, stream }) => {

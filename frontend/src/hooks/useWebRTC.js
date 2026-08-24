@@ -92,11 +92,11 @@ export const useWebRTC = () => {
     pc.ontrack = (event) => {
       console.log('🎥 WebRTC Remote track received:', event.track.kind, event.track.id);
       if (event.streams && event.streams[0]) {
-        // Create a new MediaStream object so Zustand detects state change and re-renders
-        setRemoteStream(new MediaStream(event.streams[0].getTracks()));
+        // Pass the ORIGINAL stream object to avoid iOS Safari audio bugs
+        setRemoteStream(event.streams[0]);
       } else {
         setRemoteStream((prev) => {
-          const s = prev ? new MediaStream(prev.getTracks()) : new MediaStream();
+          const s = prev || new MediaStream();
           s.addTrack(event.track);
           return s;
         });
