@@ -6,12 +6,17 @@ import { stopIncomingRingtone } from '../services/audio';
 
 const ICE_SERVERS = {
   iceServers: [
+    // Google STUN Servers
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
+    // Twilio STUN
     { urls: 'stun:global.stun.twilio.com:3478' },
+    // Cloudflare STUN
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    // Metered Free TURN/STUN (Public/Shared - May be rate limited)
     { urls: 'stun:stun.relay.metered.ca:80' },
     {
       urls: 'turn:openrelay.metered.ca:80',
