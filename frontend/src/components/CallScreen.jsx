@@ -76,7 +76,7 @@ export const CallScreen = () => {
     return () => clearInterval(timer);
   }, [callStatus, setCallDuration]);
 
-  if (callStatus !== 'calling' && callStatus !== 'connected') return null;
+  if (callStatus !== 'calling' && callStatus !== 'connecting' && callStatus !== 'connected') return null;
 
   const peer = isGroupCall
     ? { name: groupInfo?.groupName || 'Group Call', avatar: groupInfo?.groupAvatar }
@@ -125,7 +125,7 @@ export const CallScreen = () => {
 
           <div className="px-3 py-1 bg-wa-dark-panel/90 rounded-full border border-wa-dark-border shadow">
             <span className="text-xs font-semibold text-wa-green">
-              {callStatus === 'calling' ? 'Calling...' : formatDuration(callDuration)}
+              {callStatus === 'calling' ? 'Calling...' : callStatus === 'connecting' ? 'Connecting...' : formatDuration(callDuration)}
             </span>
           </div>
         </div>
@@ -229,7 +229,7 @@ export const CallScreen = () => {
                     {peer.name}
                   </h2>
                   <p className="text-xs text-wa-text-secondary mt-1">
-                    {callStatus === 'calling' ? 'Ringing...' : 'Connecting video...'}
+                    {callStatus === 'calling' ? 'Ringing...' : callStatus === 'connecting' ? 'Connecting video...' : 'Video call in progress'}
                   </p>
                 </div>
               </div>
@@ -272,7 +272,7 @@ export const CallScreen = () => {
                 {peer.name}
               </h2>
               <p className="text-sm text-wa-text-secondary mt-1">
-                {callStatus === 'calling' ? 'Ringing...' : 'Voice call in progress'}
+                {callStatus === 'calling' ? 'Ringing...' : callStatus === 'connecting' ? 'Connecting...' : 'Voice call in progress'}
               </p>
             </div>
           </div>

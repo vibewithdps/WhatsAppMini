@@ -78,15 +78,16 @@ export const OTPVerify = ({ identifier, initialOtp, onBack }) => {
               />
             </div>
 
-            {/* Optional Name */}
+            {/* Mandatory Name */}
             <div>
               <label className="text-xs font-semibold text-wa-text-secondary uppercase tracking-wider block mb-1.5">
-                Your Display Name (Optional)
+                Your Display Name <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <User className="w-4 h-4 absolute left-3 top-3 text-wa-text-secondary" />
                 <input
                   type="text"
+                  required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. John Doe"
@@ -107,7 +108,7 @@ export const OTPVerify = ({ identifier, initialOtp, onBack }) => {
 
             <button
               type="submit"
-              disabled={otp.length < 6 || isLoading}
+              disabled={otp.length < 6 || !name.trim() || isLoading}
               className="w-full py-3 rounded-xl bg-wa-green text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-wa-green-dark transition-colors shadow disabled:opacity-50"
             >
               <span>{isLoading ? 'Verifying...' : 'Verify & Continue'}</span>

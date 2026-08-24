@@ -82,7 +82,8 @@ export const useWebRTC = () => {
     pc.ontrack = (event) => {
       console.log('🎥 WebRTC Remote track received:', event.track.kind, event.track.id);
       if (event.streams && event.streams[0]) {
-        setRemoteStream(event.streams[0]);
+        // Create a new MediaStream object so Zustand detects state change and re-renders
+        setRemoteStream(new MediaStream(event.streams[0].getTracks()));
       } else {
         setRemoteStream((prev) => {
           const s = prev ? new MediaStream(prev.getTracks()) : new MediaStream();
@@ -186,7 +187,7 @@ export const useWebRTC = () => {
       // Handle Call Accepted Response
       const handleCallAccepted = async ({ signal }) => {
         console.log('📡 Call Accepted by receiver, setting remote description...');
-        setCallStatus('connected');
+        setCallStatus('connecting');
         if (pc && pc.signalingState !== 'closed') {
           try {
             await pc.setRemoteDescription(new RTCSessionDescription(signal));
@@ -305,7 +306,7 @@ export const useWebRTC = () => {
       if (isGroup) {
         useCallStore.setState({
           isGroupCall: true,
-          callStatus: 'connected',
+          callStatus: 'connecting',
           callType,
           groupInfo: {
             chatId: incomingCallData.chatId,
@@ -321,7 +322,7 @@ export const useWebRTC = () => {
       }
 
       useCallStore.setState({
-        callStatus: 'connected',
+        callStatus: 'connecting',
         callType,
         caller: {
           _id: incomingCallData.from,

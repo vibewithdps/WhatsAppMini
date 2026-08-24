@@ -135,9 +135,7 @@ export const useChatStore = create((set, get) => ({
         if (encrypted) formData.append('encrypted', encrypted);
         if (resolvedFileType) formData.append('fileType', resolvedFileType);
 
-        res = await api.post('/messages', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        res = await api.post('/messages', formData);
       } else {
         res = await api.post('/messages', {
           chatId,

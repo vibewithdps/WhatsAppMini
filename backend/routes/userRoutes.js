@@ -6,6 +6,7 @@ import {
   togglePinChat,
   toggleArchiveChat,
   toggleBlockUser,
+  saveContact,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -15,6 +16,7 @@ router.use(protect);
 
 router.get('/search', searchUsers);
 router.get('/', getAllUsers);
+router.post('/contacts', saveContact);
 router.get('/:id', getUserById);
 router.put('/pin-chat/:chatId', togglePinChat);
 router.put('/archive-chat/:chatId', toggleArchiveChat);

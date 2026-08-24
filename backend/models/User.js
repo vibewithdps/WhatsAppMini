@@ -78,6 +78,11 @@ const userSchema = new mongoose.Schema(
       of: String,
       default: {},
     },
+    savedContacts: [
+      {
+        type: String,
+      }
+    ],
   },
   {
     timestamps: true,

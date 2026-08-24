@@ -28,18 +28,64 @@ export const searchUsers = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc   Get All Available Users / Directory
+ * @desc   Get All Available Users / Directory (Mutual Contacts Only)
  * @route  GET /api/users
  * @access Private
  */
 export const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({ _id: { $ne: req.user._id } })
+  const currentUser = await User.findById(req.user._id);
+  const mySavedContacts = currentUser.savedContacts || [];
+  const myIdentifiers = [currentUser.phone, currentUser.email].filter(Boolean);
+
+  // Mutual contact logic:
+  // 1. Their phone or email is in my savedContacts
+  // 2. My phone or email is in their savedContacts
+  const query = {
+    _id: { $ne: req.user._id },
+    $and: [
+      {
+        $or: [
+          { phone: { $in: mySavedContacts } },
+          { email: { $in: mySavedContacts } }
+        ]
+      },
+      {
+        savedContacts: { $in: myIdentifiers }
+      }
+    ]
+  };
+
+  const users = await User.find(query)
     .select('name email phone avatar about isOnline lastSeen publicKey')
     .sort({ name: 1 });
 
   res.status(200).json({
     success: true,
     users,
+  });
+});
+
+/**
+ * @desc   Save a contact identifier (phone or email)
+ * @route  POST /api/users/contacts
+ * @access Private
+ */
+export const saveContact = asyncHandler(async (req, res) => {
+  const { identifier } = req.body;
+  if (!identifier) {
+    res.status(400);
+    throw new Error('Please provide a phone number or email');
+  }
+
+  const user = await User.findById(req.user._id);
+  if (!user.savedContacts.includes(identifier)) {
+    user.savedContacts.push(identifier);
+    await user.save();
+  }
+
+  res.status(200).json({
+    success: true,
+    savedContacts: user.savedContacts,
   });
 });
 

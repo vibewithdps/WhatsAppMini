@@ -9,6 +9,7 @@ export const NewChatModal = () => {
 
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [newContact, setNewContact] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -65,29 +66,63 @@ export const NewChatModal = () => {
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b border-wa-dark-border">
+        <div className="p-4 border-b border-wa-dark-border space-y-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-3 text-wa-text-secondary" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search contacts by name or phone..."
+              placeholder="Search mutual contacts..."
               className="w-full pl-10 pr-4 py-2 text-sm rounded-xl bg-gray-100 dark:bg-wa-dark-input text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-wa-text-secondary focus:outline-none focus:ring-1 focus:ring-wa-green border border-gray-200 dark:border-wa-dark-border"
               autoFocus
             />
           </div>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!newContact.trim()) return;
+              try {
+                await api.post('/users/contacts', { identifier: newContact.trim() });
+                setNewContact('');
+                alert('Contact saved! They will appear here once they also save your number.');
+                // Refresh list
+                const res = await api.get('/users');
+                setUsers(res.data.users || []);
+              } catch (err) {
+                alert('Failed to save contact');
+              }
+            }}
+            className="flex items-center gap-2"
+          >
+            <input
+              type="text"
+              value={newContact}
+              onChange={(e) => setNewContact(e.target.value)}
+              placeholder="Save a new phone or email..."
+              className="flex-1 px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-wa-dark-input text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-wa-text-secondary focus:outline-none focus:ring-1 focus:ring-wa-green border border-gray-200 dark:border-wa-dark-border"
+            />
+            <button
+              type="submit"
+              disabled={!newContact.trim()}
+              className="px-4 py-2 bg-wa-green text-white text-sm font-semibold rounded-lg hover:bg-wa-green-dark disabled:opacity-50"
+            >
+              Add
+            </button>
+          </form>
         </div>
 
         {/* User list */}
         <div className="flex-1 overflow-y-auto divide-y divide-wa-dark-border/40">
           {isLoading ? (
             <div className="p-8 text-center text-xs text-wa-text-secondary">
-              Loading contacts...
+              Loading mutual contacts...
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="p-8 text-center text-xs text-wa-text-secondary">
-              No contacts found.
+              No mutual contacts found.<br/><br/>
+              Both you and the other person must save each other's phone number or email to chat.
             </div>
           ) : (
             filteredUsers.map((u) => (
