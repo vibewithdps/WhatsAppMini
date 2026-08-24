@@ -8,9 +8,11 @@ import {
   Download,
   Laptop,
   QrCode,
+  LogOut,
 } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { usePWAStore } from '../store/usePWAStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const SettingsModal = ({ isOpen, onClose, onOpenLinkedDevices }) => {
   const { theme, toggleTheme } = useThemeStore();
@@ -182,6 +184,33 @@ export const SettingsModal = ({ isOpen, onClose, onOpenLinkedDevices }) => {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Account Actions */}
+          <div className="pt-4 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-red-400">
+              Account Actions
+            </h3>
+            
+            <button
+              onClick={() => {
+                onClose();
+                useAuthStore.getState().logout();
+              }}
+              className="w-full p-4 bg-wa-dark-input dark:bg-wa-dark-input bg-wa-light-input rounded-2xl flex items-center justify-between hover:bg-red-500/10 transition-colors group border border-transparent hover:border-red-500/30"
+            >
+              <div className="flex items-center gap-3">
+                <LogOut className="w-5 h-5 text-red-400 group-hover:text-red-500 transition-colors" />
+                <div className="text-left">
+                  <h4 className="text-sm font-medium text-red-400 group-hover:text-red-500 transition-colors">
+                    Log Out
+                  </h4>
+                  <p className="text-xs text-wa-text-secondary mt-0.5">
+                    Sign out of your WhatsApp Mini account
+                  </p>
+                </div>
+              </div>
+            </button>
           </div>
 
           {/* App & Creator Info */}
