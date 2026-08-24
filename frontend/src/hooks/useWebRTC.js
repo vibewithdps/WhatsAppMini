@@ -48,9 +48,16 @@ export const useWebRTC = () => {
 
   const cleanupPeer = useCallback(() => {
     stopIncomingRingtone();
+    const socket = getSocket();
+    if (socket) {
+      socket.off('call_accepted');
+      socket.off('ice_candidate');
+    }
     if (peerConnectionRef.current) {
       peerConnectionRef.current.onicecandidate = null;
       peerConnectionRef.current.ontrack = null;
+      peerConnectionRef.current.oniceconnectionstatechange = null;
+      peerConnectionRef.current.onconnectionstatechange = null;
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
     }
@@ -61,6 +68,7 @@ export const useWebRTC = () => {
     const socket = getSocket();
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
+    candidateQueueRef.current = [];
 
     pc.onicecandidate = (event) => {
       if (event.candidate && socket) {
@@ -104,6 +112,23 @@ export const useWebRTC = () => {
         endActiveCall(false);
       }
     };
+
+    // Attach ICE candidate socket listener immediately
+    if (socket) {
+      socket.off('ice_candidate');
+      socket.on('ice_candidate', async ({ candidate }) => {
+        if (!pc || pc.signalingState === 'closed' || !candidate) return;
+        if (pc.remoteDescription && pc.remoteDescription.type) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.warn('addIceCandidate error:', e);
+          }
+        } else {
+          candidateQueueRef.current.push(candidate);
+        }
+      });
+    }
 
     return pc;
   };
@@ -158,7 +183,7 @@ export const useWebRTC = () => {
         chatId,
       });
 
-      // Socket Listeners
+      // Handle Call Accepted Response
       const handleCallAccepted = async ({ signal }) => {
         console.log('📡 Call Accepted by receiver, setting remote description...');
         setCallStatus('connected');
@@ -175,22 +200,8 @@ export const useWebRTC = () => {
         }
       };
 
-      const handleIceCandidate = async ({ candidate }) => {
-        if (!pc || pc.signalingState === 'closed' || !candidate) return;
-
-        if (pc.remoteDescription) {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
-          } catch (e) {}
-        } else {
-          candidateQueueRef.current.push(candidate);
-        }
-      };
-
       socket.off('call_accepted');
-      socket.off('ice_candidate');
       socket.on('call_accepted', handleCallAccepted);
-      socket.on('ice_candidate', handleIceCandidate);
     } catch (err) {
       console.error('Failed to start WebRTC call:', err);
       alert('Unable to access microphone or camera. Please check browser permissions.');
@@ -337,20 +348,6 @@ export const useWebRTC = () => {
         to: incomingCallData.from,
         from: user._id,
       });
-
-      const handleIceCandidate = async ({ candidate }) => {
-        if (!pc || pc.signalingState === 'closed' || !candidate) return;
-        if (pc.remoteDescription) {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
-          } catch (e) {}
-        } else {
-          candidateQueueRef.current.push(candidate);
-        }
-      };
-
-      socket.off('ice_candidate');
-      socket.on('ice_candidate', handleIceCandidate);
     } catch (err) {
       console.error('Failed to answer call:', err);
       alert('Could not access microphone/camera. Please allow browser permissions.');
