@@ -81,12 +81,23 @@ export const MessageInput = () => {
 
   // Handle Send Text Message
   const handleSend = async (e) => {
-    e?.preventDefault();
-    if (!text.trim() || !activeChat) return;
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+    const trimmed = text.trim();
+    if (!trimmed || !activeChat) return;
 
-    let contentToSend = text.trim();
+    // Clear input immediately so user gets 0ms responsive feedback
+    setText('');
+    setShowPicker(false);
+
+    let contentToSend = trimmed;
     if (isEncryptedMode) {
-      contentToSend = await encryptMessage(contentToSend, activeChat._id);
+      try {
+        contentToSend = await encryptMessage(contentToSend, activeChat._id);
+      } catch (err) {
+        console.warn('Encryption fallback to plain text:', err);
+      }
     }
 
     try {
@@ -95,8 +106,6 @@ export const MessageInput = () => {
         replyToId: quotedMessage?._id,
         encrypted: isEncryptedMode,
       });
-      setText('');
-      setShowPicker(false);
     } catch (err) {
       console.error('Send error:', err);
     }
@@ -105,6 +114,7 @@ export const MessageInput = () => {
   // Handle Send Sticker
   const handleSendSticker = async (stickerUrl) => {
     if (!activeChat) return;
+    setShowPicker(false);
     try {
       await sendMessage({
         content: 'Sticker',
@@ -112,7 +122,6 @@ export const MessageInput = () => {
         fileType: 'image',
         replyToId: quotedMessage?._id,
       });
-      setShowPicker(false);
     } catch (err) {
       console.error('Sticker send error:', err);
     }
@@ -192,6 +201,7 @@ export const MessageInput = () => {
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-wa-dark-border dark:border-wa-dark-border border-wa-light-border bg-wa-dark-header dark:bg-wa-dark-header bg-wa-light-header">
             <div className="flex items-center gap-4">
               <button
+                type="button"
                 onClick={() => setPickerTab('emoji')}
                 className={`text-xs font-bold pb-1 flex items-center gap-1.5 transition-colors ${
                   pickerTab === 'emoji'
@@ -203,6 +213,7 @@ export const MessageInput = () => {
                 <span>Emoji</span>
               </button>
               <button
+                type="button"
                 onClick={() => setPickerTab('stickers')}
                 className={`text-xs font-bold pb-1 flex items-center gap-1.5 transition-colors ${
                   pickerTab === 'stickers'
@@ -215,6 +226,7 @@ export const MessageInput = () => {
               </button>
             </div>
             <button
+              type="button"
               onClick={() => setShowPicker(false)}
               className="text-wa-text-secondary hover:text-wa-text-primary p-1"
             >
@@ -236,6 +248,7 @@ export const MessageInput = () => {
               {POPULAR_STICKERS.map((stk, idx) => (
                 <button
                   key={idx}
+                  type="button"
                   onClick={() => handleSendSticker(stk)}
                   className="rounded-xl overflow-hidden hover:scale-105 transition-transform border border-transparent hover:border-wa-green"
                 >
@@ -252,6 +265,7 @@ export const MessageInput = () => {
         <div className="absolute bottom-full mb-3 left-3 sm:left-12 bg-wa-dark-panel dark:bg-wa-dark-panel bg-white p-3 rounded-3xl shadow-2xl border border-wa-dark-border dark:border-wa-dark-border border-wa-light-border grid grid-cols-3 gap-3 z-50 w-72 animate-fade-in">
           {/* Photos & Videos */}
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-wa-dark-hover dark:hover:bg-wa-dark-hover hover:bg-wa-light-hover transition-colors group"
           >
@@ -263,6 +277,7 @@ export const MessageInput = () => {
 
           {/* Document */}
           <button
+            type="button"
             onClick={() => docFileInputRef.current?.click()}
             className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-wa-dark-hover dark:hover:bg-wa-dark-hover hover:bg-wa-light-hover transition-colors group"
           >
@@ -274,6 +289,7 @@ export const MessageInput = () => {
 
           {/* Audio */}
           <button
+            type="button"
             onClick={() => audioFileInputRef.current?.click()}
             className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-wa-dark-hover dark:hover:bg-wa-dark-hover hover:bg-wa-light-hover transition-colors group"
           >
@@ -285,6 +301,7 @@ export const MessageInput = () => {
 
           {/* Location */}
           <button
+            type="button"
             onClick={handleShareLocation}
             className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-wa-dark-hover dark:hover:bg-wa-dark-hover hover:bg-wa-light-hover transition-colors group"
           >
@@ -296,6 +313,7 @@ export const MessageInput = () => {
 
           {/* Stickers */}
           <button
+            type="button"
             onClick={() => {
               setPickerTab('stickers');
               setShowPicker(true);
@@ -311,6 +329,7 @@ export const MessageInput = () => {
 
           {/* Contact */}
           <button
+            type="button"
             onClick={() => {
               setText(`👤 Contact: ${user?.name || 'Contact'} (${user?.phone || user?.email})`);
               setShowAttachMenu(false);
@@ -353,6 +372,7 @@ export const MessageInput = () => {
         <div className="flex items-center justify-between gap-3 animate-fade-in py-1">
           {/* Delete Recording */}
           <button
+            type="button"
             onClick={cancelRecording}
             className="p-2 rounded-full text-red-400 hover:bg-red-500/10 transition-colors"
             title="Cancel"
@@ -378,6 +398,7 @@ export const MessageInput = () => {
 
           {/* Finish & Send Voice */}
           <button
+            type="button"
             onClick={stopRecording}
             className="w-11 h-11 rounded-full bg-wa-green text-white flex items-center justify-center hover:bg-wa-green-dark transition-transform active:scale-95 flex-shrink-0 shadow-lg"
             title="Send Voice Note"
@@ -386,10 +407,11 @@ export const MessageInput = () => {
           </button>
         </div>
       ) : (
-        /* Normal WhatsApp Input Bar */
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        /* Unified Form for Complete Input Bar */
+        <form onSubmit={handleSend} className="flex items-center gap-1.5 sm:gap-2.5 w-full">
           {/* Emoji & Stickers Button */}
           <button
+            type="button"
             onClick={() => {
               setPickerTab('emoji');
               setShowPicker(!showPicker);
@@ -404,6 +426,7 @@ export const MessageInput = () => {
 
           {/* Attachment Paperclip Button */}
           <button
+            type="button"
             onClick={() => setShowAttachMenu(!showAttachMenu)}
             className={`p-2 rounded-full transition-colors flex-shrink-0 ${
               showAttachMenu ? 'text-wa-green bg-wa-green/10 rotate-45' : 'text-wa-text-secondary hover:text-wa-text-primary'
@@ -415,6 +438,7 @@ export const MessageInput = () => {
 
           {/* End-to-End Encryption Toggle */}
           <button
+            type="button"
             onClick={() => setIsEncryptedMode(!isEncryptedMode)}
             className={`p-2 rounded-xl transition-colors flex-shrink-0 ${
               isEncryptedMode
@@ -427,7 +451,7 @@ export const MessageInput = () => {
           </button>
 
           {/* Main Message Text Input Box */}
-          <form onSubmit={handleSend} className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
             <input
               type="text"
               value={text}
@@ -441,27 +465,28 @@ export const MessageInput = () => {
               }
               className="w-full px-4 py-2.5 sm:py-3 rounded-full bg-gray-100 dark:bg-wa-dark-input text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-wa-text-secondary text-sm focus:outline-none focus:ring-2 focus:ring-wa-green shadow-inner"
             />
-          </form>
+          </div>
 
           {/* Send Button or Voice Note Mic */}
           {text.trim() ? (
             <button
-              onClick={handleSend}
-              className="w-11 h-11 rounded-full bg-wa-green text-white flex items-center justify-center hover:bg-wa-green-dark transition-transform active:scale-95 flex-shrink-0 shadow-lg"
+              type="submit"
+              className="w-11 h-11 rounded-full bg-wa-green text-white flex items-center justify-center hover:bg-wa-green-dark transition-transform active:scale-95 flex-shrink-0 shadow-lg cursor-pointer"
               title="Send message"
             >
               <Send className="w-5 h-5 ml-0.5" />
             </button>
           ) : (
             <button
+              type="button"
               onClick={startRecording}
-              className="w-11 h-11 rounded-full bg-wa-green/15 text-wa-green hover:bg-wa-green hover:text-white flex items-center justify-center transition-all flex-shrink-0 shadow active:scale-95"
+              className="w-11 h-11 rounded-full bg-wa-green/15 text-wa-green hover:bg-wa-green hover:text-white flex items-center justify-center transition-all flex-shrink-0 shadow active:scale-95 cursor-pointer"
               title="Hold to Record Voice Note"
             >
               <Mic className="w-5 h-5" />
             </button>
           )}
-        </div>
+        </form>
       )}
     </div>
   );
