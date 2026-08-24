@@ -180,7 +180,7 @@ export const CallScreen = () => {
           /* 1-on-1 Video Call Layout */
           <>
             {/* Remote Full Video */}
-            {remoteStream ? (
+            {remoteStream && remoteStream.getVideoTracks().length > 0 ? (
               <video
                 ref={(el) => {
                   if (el && remoteStream && el.srcObject !== remoteStream) {

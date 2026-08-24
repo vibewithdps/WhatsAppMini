@@ -1,16 +1,22 @@
 import { io } from 'socket.io-client';
 
-const BACKEND_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD
-    ? window.location.origin
-    : `http://${window.location.hostname || 'localhost'}:5000`);
+const DEFAULT_BACKEND_URL = 'https://whatsapp-mini-backend.onrender.com';
+
+const getSocketUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/$/, '');
+  }
+  if (import.meta.env.PROD) {
+    return DEFAULT_BACKEND_URL;
+  }
+  return `http://${window.location.hostname || 'localhost'}:5000`;
+};
 
 let socket = null;
 
 export const initSocket = (user) => {
   if (!socket && user) {
-    socket = io(BACKEND_URL, {
+    socket = io(getSocketUrl(), {
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,

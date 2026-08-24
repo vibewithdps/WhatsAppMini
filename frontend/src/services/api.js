@@ -1,11 +1,20 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
-  : '/api';
+// Live production backend URL on Render
+const DEFAULT_BACKEND_URL = 'https://whatsapp-mini-backend.onrender.com';
+
+const getBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`;
+  }
+  if (import.meta.env.PROD) {
+    return `${DEFAULT_BACKEND_URL}/api`;
+  }
+  return `http://${window.location.hostname || 'localhost'}:5000/api`;
+};
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -35,7 +44,7 @@ api.interceptors.response.use(
 
       if (refreshToken) {
         try {
-          const res = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+          const res = await axios.post(`${getBaseUrl()}/auth/refresh`, { refreshToken });
           const { accessToken, refreshToken: newRefreshToken } = res.data;
 
           localStorage.setItem('wa_access_token', accessToken);

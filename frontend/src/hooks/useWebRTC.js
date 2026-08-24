@@ -35,6 +35,7 @@ const ICE_SERVERS = {
 export const useWebRTC = () => {
   const peerConnectionRef = useRef(null);
   const candidateQueueRef = useRef([]);
+  const remoteStreamRef = useRef(null);
   const user = useAuthStore((state) => state.user);
 
   const {
@@ -54,13 +55,25 @@ export const useWebRTC = () => {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
     }
+    remoteStreamRef.current = null;
     candidateQueueRef.current = [];
   }, []);
 
-  const createPeerConnection = (targetUserId) => {
+  const createPeerConnection = (targetUserId, isVideoCall = false) => {
     const socket = getSocket();
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
+    remoteStreamRef.current = new MediaStream();
+
+    // Explicit 2-way transceivers
+    try {
+      pc.addTransceiver('audio', { direction: 'sendrecv' });
+      if (isVideoCall) {
+        pc.addTransceiver('video', { direction: 'sendrecv' });
+      }
+    } catch (e) {
+      console.warn('Transceiver add error:', e);
+    }
 
     pc.onicecandidate = (event) => {
       if (event.candidate && socket) {
@@ -72,17 +85,18 @@ export const useWebRTC = () => {
     };
 
     pc.ontrack = (event) => {
-      console.log('🎥 WebRTC Remote track received:', event.track.kind);
-      if (event.streams && event.streams[0]) {
+      console.log('🎥 WebRTC Remote track received:', event.track.kind, event.track.id);
+      if (remoteStreamRef.current) {
+        remoteStreamRef.current.addTrack(event.track);
+        setRemoteStream(new MediaStream(remoteStreamRef.current.getTracks()));
+      } else if (event.streams && event.streams[0]) {
+        remoteStreamRef.current = event.streams[0];
         setRemoteStream(event.streams[0]);
-      } else {
-        const stream = new MediaStream([event.track]);
-        setRemoteStream(stream);
       }
     };
 
     pc.oniceconnectionstatechange = () => {
-      console.log('📡 ICE Connection State:', pc.iceConnectionState);
+      console.log('📡 ICE State:', pc.iceConnectionState);
       if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
         setCallStatus('connected');
       }
@@ -126,7 +140,11 @@ export const useWebRTC = () => {
       let stream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
           video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false,
         });
       } catch (mediaErr) {
@@ -139,12 +157,12 @@ export const useWebRTC = () => {
 
       setLocalStream(stream);
 
-      const pc = createPeerConnection(receiverUser._id);
+      const pc = createPeerConnection(receiverUser._id, callType === 'video');
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       const offer = await pc.createOffer({
         offerToReceiveAudio: true,
-        offerToReceiveVideo: true,
+        offerToReceiveVideo: callType === 'video',
       });
       await pc.setLocalDescription(offer);
 
@@ -160,7 +178,7 @@ export const useWebRTC = () => {
 
       // Socket Listeners
       const handleCallAccepted = async ({ signal }) => {
-        console.log('📡 Call Accepted by receiver! Transitioning to connected...');
+        console.log('📡 Call Accepted by receiver, setting remote description...');
         setCallStatus('connected');
         if (pc && pc.signalingState !== 'closed') {
           try {
@@ -278,7 +296,11 @@ export const useWebRTC = () => {
       let stream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
           video: callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false,
         });
       } catch (mediaErr) {
@@ -319,14 +341,14 @@ export const useWebRTC = () => {
         },
       });
 
-      const pc = createPeerConnection(incomingCallData.from);
+      const pc = createPeerConnection(incomingCallData.from, callType === 'video');
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCallData.signal));
 
       const answer = await pc.createAnswer({
         offerToReceiveAudio: true,
-        offerToReceiveVideo: true,
+        offerToReceiveVideo: callType === 'video',
       });
       await pc.setLocalDescription(answer);
 
