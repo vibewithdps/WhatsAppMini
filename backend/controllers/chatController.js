@@ -56,7 +56,11 @@ export const accessChat = asyncHandler(async (req, res) => {
  * @access Private
  */
 export const fetchChats = asyncHandler(async (req, res) => {
-  const chats = await Chat.find({
+  const currentUser = await User.findById(req.user._id);
+  const mySavedContacts = currentUser.savedContacts || [];
+  const myIdentifiers = [currentUser.phone, currentUser.email].filter(Boolean);
+
+  const rawChats = await Chat.find({
     users: { $elemMatch: { $eq: req.user._id } },
   })
     .populate('users', '-password')
@@ -70,7 +74,32 @@ export const fetchChats = asyncHandler(async (req, res) => {
     })
     .sort({ updatedAt: -1 });
 
-  res.status(200).json(chats);
+  // Apply Privacy Rule: Only show 1-on-1 chats if users are MUTUAL contacts
+  const filteredChats = rawChats.filter((chat) => {
+    if (chat.isGroupChat) return true; // Always show group chats
+
+    const otherUser = chat.users.find(
+      (u) => u._id.toString() !== req.user._id.toString()
+    );
+
+    if (!otherUser) return false;
+
+    // 1. Their phone/email is in my savedContacts
+    const theirIdentifierInMine =
+      mySavedContacts.includes(otherUser.phone) ||
+      mySavedContacts.includes(otherUser.email);
+
+    // 2. My phone/email is in their savedContacts
+    const otherUserSavedContacts = otherUser.savedContacts || [];
+    const myIdentifierInTheirs = otherUserSavedContacts.some((id) =>
+      myIdentifiers.includes(id)
+    );
+
+    // Must be mutual
+    return theirIdentifierInMine && myIdentifierInTheirs;
+  });
+
+  res.status(200).json(filteredChats);
 });
 
 /**
