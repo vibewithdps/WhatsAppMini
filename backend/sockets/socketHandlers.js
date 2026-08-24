@@ -101,15 +101,23 @@ export const setupSocketHandlers = (io) => {
       socket.to(chatId).emit('stop_typing', { chatId, userId });
     });
 
-    /**
-     * Read Receipts (Blue Ticks) & Delivery Confirmations
-     */
-    socket.on('read_messages', ({ chatId }) => {
-      socket.to(chatId).emit('messages_read_receipt', {
-        chatId,
-        readByUserId: currentUserId,
-        readAt: new Date(),
-      });
+    socket.on('read_messages', async ({ chatId }) => {
+      try {
+        const chat = await Chat.findById(chatId);
+        if (!chat) return;
+
+        chat.users.forEach((userId) => {
+          if (userId.toString() !== currentUserId) {
+            socket.to(userId.toString()).emit('messages_read_receipt', {
+              chatId,
+              readByUserId: currentUserId,
+              readAt: new Date(),
+            });
+          }
+        });
+      } catch (err) {
+        console.error('Error emitting read_messages:', err);
+      }
     });
 
     socket.on('message_delivered', async ({ messageId, chatId, senderId, recipientId }) => {

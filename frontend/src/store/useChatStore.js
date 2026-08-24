@@ -210,7 +210,22 @@ export const useChatStore = create((set, get) => ({
         return state;
       }
       const updatedChats = [...state.chats];
-      const chat = { ...updatedChats[chatIndex], latestMessage: message, updatedAt: new Date() };
+      const existingChat = updatedChats[chatIndex];
+      const isCurrentChat = state.activeChat?._id === chatId;
+      const isFromMe = message.sender?._id === useAuthStore.getState().user?._id;
+      
+      const newUnreadCount = 
+        !isCurrentChat && !isFromMe 
+          ? (existingChat.unreadCount || 0) + 1 
+          : (isCurrentChat ? 0 : existingChat.unreadCount);
+
+      const chat = { 
+        ...existingChat, 
+        latestMessage: message, 
+        updatedAt: new Date(),
+        unreadCount: newUnreadCount 
+      };
+      
       updatedChats.splice(chatIndex, 1);
       updatedChats.unshift(chat); // Move to top of chat list
       return { chats: updatedChats };
@@ -287,6 +302,14 @@ export const useChatStore = create((set, get) => ({
       if (socket) {
         socket.emit('read_messages', { chatId });
       }
+
+      set((state) => {
+        const chatIndex = state.chats.findIndex((c) => c._id === chatId);
+        if (chatIndex === -1) return state;
+        const updatedChats = [...state.chats];
+        updatedChats[chatIndex] = { ...updatedChats[chatIndex], unreadCount: 0 };
+        return { chats: updatedChats };
+      });
     } catch (err) {
       console.error('Failed to mark read:', err);
     }
@@ -294,34 +317,72 @@ export const useChatStore = create((set, get) => ({
 
   handleReadReceipt: (chatId, readByUserId) => {
     set((state) => {
+      const updatedState = { ...state };
+      
+      // Update open chat messages
       if (state.activeChat?._id === chatId) {
-        return {
-          messages: state.messages.map((m) => ({
-            ...m,
-            readBy: [...(m.readBy || []), { user: readByUserId, timestamp: new Date() }],
-          })),
-        };
+        updatedState.messages = state.messages.map((m) => ({
+          ...m,
+          readBy: [...(m.readBy || []), { user: readByUserId, timestamp: new Date() }],
+        }));
       }
-      return state;
+
+      // Update latest message in chat list
+      const chatIndex = state.chats.findIndex((c) => c._id === chatId);
+      if (chatIndex !== -1) {
+        const chat = state.chats[chatIndex];
+        if (chat.latestMessage) {
+          const updatedChats = [...state.chats];
+          updatedChats[chatIndex] = {
+            ...chat,
+            latestMessage: {
+              ...chat.latestMessage,
+              readBy: [...(chat.latestMessage.readBy || []), { user: readByUserId, timestamp: new Date() }],
+            },
+          };
+          updatedState.chats = updatedChats;
+        }
+      }
+
+      return updatedState;
     });
   },
 
   handleDeliveryReceipt: (chatId, messageId, deliveredToUserId) => {
     set((state) => {
+      const updatedState = { ...state };
+      
+      // Update open chat messages
       if (state.activeChat?._id === chatId) {
-        return {
-          messages: state.messages.map((m) => {
-            if (m._id === messageId || !messageId) {
-              return {
-                ...m,
-                deliveredTo: [...(m.deliveredTo || []), { user: deliveredToUserId, timestamp: new Date() }],
-              };
-            }
-            return m;
-          }),
-        };
+        updatedState.messages = state.messages.map((m) => {
+          if (m._id === messageId || !messageId) {
+            return {
+              ...m,
+              deliveredTo: [...(m.deliveredTo || []), { user: deliveredToUserId, timestamp: new Date() }],
+            };
+          }
+          return m;
+        });
       }
-      return state;
+
+      // Update latest message in chat list
+      const chatIndex = state.chats.findIndex((c) => c._id === chatId);
+      if (chatIndex !== -1) {
+        const chat = state.chats[chatIndex];
+        if (chat.latestMessage && (chat.latestMessage._id === messageId || !messageId)) {
+          const updatedChats = [...state.chats];
+          updatedChats[chatIndex] = {
+            ...chat,
+            latestMessage: {
+              ...chat.latestMessage,
+              deliveredTo: [...(chat.latestMessage.deliveredTo || []), { user: deliveredToUserId, timestamp: new Date() }],
+            },
+          };
+          updatedState.chats = updatedChats;
+        }
+      }
+
+      return updatedState;
     });
   },
 

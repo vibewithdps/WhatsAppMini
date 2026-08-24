@@ -253,6 +253,13 @@ export const ChatList = () => {
                         </>
                       )}
                     </div>
+                    
+                    {/* Unread Badge */}
+                    {chat.unreadCount > 0 && (
+                      <div className="flex-shrink-0 ml-2 bg-wa-green text-wa-dark-panel text-[10px] font-bold px-1.5 py-0.5 min-w-[20px] text-center rounded-full">
+                        {chat.unreadCount}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

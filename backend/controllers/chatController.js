@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import Chat from '../models/Chat.js';
 import User from '../models/User.js';
+import Message from '../models/Message.js';
 import { uploadMedia } from '../config/cloudinary.js';
 
 /**
@@ -99,7 +100,23 @@ export const fetchChats = asyncHandler(async (req, res) => {
     return theirIdentifierInMine && myIdentifierInTheirs;
   });
 
-  res.status(200).json(filteredChats);
+  // Calculate unread count for each chat
+  const chatsWithUnreadCount = await Promise.all(
+    filteredChats.map(async (chat) => {
+      const unreadCount = await Message.countDocuments({
+        chat: chat._id,
+        sender: { $ne: req.user._id },
+        'readBy.user': { $ne: req.user._id },
+      });
+
+      return {
+        ...chat._doc,
+        unreadCount,
+      };
+    })
+  );
+
+  res.status(200).json(chatsWithUnreadCount);
 });
 
 /**
