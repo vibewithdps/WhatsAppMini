@@ -32,14 +32,16 @@ export const setupSocketHandlers = (io) => {
       // Mark online in cache
       await cache.sadd('online_users', currentUserId);
 
-      // Update User in DB
-      try {
-        await User.findByIdAndUpdate(currentUserId, {
-          isOnline: true,
-          lastSeen: new Date(),
-        });
-      } catch (err) {
-        console.error('Error updating user online state:', err.message);
+      // Update User in DB if it's a valid ObjectId
+      if (currentUserId && currentUserId !== 'guest_qr_login' && currentUserId.length === 24) {
+        try {
+          await User.findByIdAndUpdate(currentUserId, {
+            isOnline: true,
+            lastSeen: new Date(),
+          });
+        } catch (err) {
+          console.error('Error updating user online state:', err.message);
+        }
       }
 
       // Broadcast presence
