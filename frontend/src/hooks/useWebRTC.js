@@ -119,34 +119,20 @@ export const useWebRTC = () => {
     return pc;
   };
 
-  // Listen for ICE candidates globally to prevent race conditions
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket || !user) return;
-
-    const handleIceCandidate = async ({ candidate }) => {
-      const pc = globalPeerConnection;
-      if (!candidate) return;
-      
-      if (!pc || pc.signalingState === 'closed' || !pc.remoteDescription) {
-        // PeerConnection not ready or remote description not set, queue it
-        globalCandidateQueue.push(candidate);
-      } else {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (e) {
-          console.warn('addIceCandidate error:', e);
-        }
-      }
-    };
-
-    socket.off('ice_candidate');
-    socket.on('ice_candidate', handleIceCandidate);
-
-    return () => {
-      socket.off('ice_candidate', handleIceCandidate);
-    };
-  }, [user]);
+export const processIceCandidate = async (candidate) => {
+  const pc = globalPeerConnection;
+  if (!candidate) return;
+  
+  if (!pc || pc.signalingState === 'closed' || !pc.remoteDescription) {
+    globalCandidateQueue.push(candidate);
+  } else {
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch (e) {
+      console.warn('addIceCandidate error:', e);
+    }
+  }
+};
 
   /**
    * Start 1-on-1 Outgoing Call
