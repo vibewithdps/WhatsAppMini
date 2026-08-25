@@ -1,22 +1,19 @@
-import { useRef, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { getSocket } from '../services/socket';
 import { useCallStore } from '../store/useCallStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { stopIncomingRingtone } from '../services/audio';
 
 const ICE_SERVERS = {
+  // ... keep existing iceServers array ...
   iceServers: [
-    // Google STUN Servers
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
-    // Twilio STUN
     { urls: 'stun:global.stun.twilio.com:3478' },
-    // Cloudflare STUN
     { urls: 'stun:stun.cloudflare.com:3478' },
-    // Dedicated Metered TURN Servers (for NAT Traversal)
     { urls: 'stun:stun.relay.metered.ca:80' },
     {
       urls: 'turn:global.relay.metered.ca:80',
@@ -42,9 +39,11 @@ const ICE_SERVERS = {
   iceCandidatePoolSize: 10,
 };
 
+// Use module-level singletons so multiple components calling useWebRTC share the same state
+let globalPeerConnection = null;
+let globalCandidateQueue = [];
+
 export const useWebRTC = () => {
-  const peerConnectionRef = useRef(null);
-  const candidateQueueRef = useRef([]);
   const user = useAuthStore((state) => state.user);
 
   const {
@@ -61,24 +60,23 @@ export const useWebRTC = () => {
     const socket = getSocket();
     if (socket) {
       socket.off('call_accepted');
-      socket.off('ice_candidate');
     }
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.onicecandidate = null;
-      peerConnectionRef.current.ontrack = null;
-      peerConnectionRef.current.oniceconnectionstatechange = null;
-      peerConnectionRef.current.onconnectionstatechange = null;
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
+    if (globalPeerConnection) {
+      globalPeerConnection.onicecandidate = null;
+      globalPeerConnection.ontrack = null;
+      globalPeerConnection.oniceconnectionstatechange = null;
+      globalPeerConnection.onconnectionstatechange = null;
+      globalPeerConnection.close();
+      globalPeerConnection = null;
     }
-    candidateQueueRef.current = [];
+    globalCandidateQueue = [];
   }, []);
 
   const createPeerConnection = (targetUserId) => {
     const socket = getSocket();
     const pc = new RTCPeerConnection(ICE_SERVERS);
-    peerConnectionRef.current = pc;
-    candidateQueueRef.current = [];
+    globalPeerConnection = pc;
+    globalCandidateQueue = [];
 
     pc.onicecandidate = (event) => {
       if (event.candidate && socket) {
@@ -92,7 +90,6 @@ export const useWebRTC = () => {
     pc.ontrack = (event) => {
       console.log('🎥 WebRTC Remote track received:', event.track.kind, event.track.id);
       if (event.streams && event.streams[0]) {
-        // Pass the ORIGINAL stream object to avoid iOS Safari audio bugs
         setRemoteStream(event.streams[0]);
       } else {
         setRemoteStream((prev) => {
@@ -133,12 +130,12 @@ export const useWebRTC = () => {
     if (!socket || !user) return;
 
     const handleIceCandidate = async ({ candidate }) => {
-      const pc = peerConnectionRef.current;
+      const pc = globalPeerConnection;
       if (!candidate) return;
       
       if (!pc || pc.signalingState === 'closed' || !pc.remoteDescription) {
         // PeerConnection not ready or remote description not set, queue it
-        candidateQueueRef.current.push(candidate);
+        globalCandidateQueue.push(candidate);
       } else {
         try {
           await pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -148,6 +145,7 @@ export const useWebRTC = () => {
       }
     };
 
+    socket.off('ice_candidate');
     socket.on('ice_candidate', handleIceCandidate);
 
     return () => {
@@ -212,8 +210,8 @@ export const useWebRTC = () => {
         if (pc && pc.signalingState !== 'closed') {
           try {
             await pc.setRemoteDescription(new RTCSessionDescription(signal));
-            while (candidateQueueRef.current.length > 0) {
-              const candidate = candidateQueueRef.current.shift();
+            while (globalCandidateQueue.length > 0) {
+              const candidate = globalCandidateQueue.shift();
               await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
             }
           } catch (e) {
@@ -360,8 +358,8 @@ export const useWebRTC = () => {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
-      while (candidateQueueRef.current.length > 0) {
-        const candidate = candidateQueueRef.current.shift();
+      while (globalCandidateQueue.length > 0) {
+        const candidate = globalCandidateQueue.shift();
         await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(() => {});
       }
 
@@ -383,7 +381,7 @@ export const useWebRTC = () => {
    */
   const toggleScreenShare = async () => {
     const isSharing = useCallStore.getState().isScreenSharing;
-    const pc = peerConnectionRef.current;
+    const pc = globalPeerConnection;
 
     if (!isSharing) {
       try {
@@ -414,7 +412,7 @@ export const useWebRTC = () => {
   };
 
   const stopScreenSharing = async () => {
-    const pc = peerConnectionRef.current;
+    const pc = globalPeerConnection;
     try {
       const cameraStream = await navigator.mediaDevices.getUserMedia({
         video: true,
