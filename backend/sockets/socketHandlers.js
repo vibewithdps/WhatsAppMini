@@ -343,7 +343,7 @@ export const setupSocketHandlers = (io) => {
       const userSockets = onlineUserSockets.get(currentUserId);
       if (userSockets) {
         userSockets.delete(socket.id);
-        if (userSockets.size === 0) {
+        if (userSockets.size === 0 && currentUserId !== 'guest_qr_login' && currentUserId.length === 24) {
           onlineUserSockets.delete(currentUserId);
           await cache.srem('online_users', currentUserId);
 
