@@ -4,32 +4,36 @@ import { useCallStore } from '../store/useCallStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { stopIncomingRingtone } from '../services/audio';
 
-const ICE_SERVERS = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun.relay.metered.ca:80' },
-    {
-      urls: 'turn:global.relay.metered.ca:80',
-      username: 'd7e3ad3d6e00da2fda92f5f9',
-      credential: 's224R/i7rztN5wvF',
-    },
-    {
-      urls: 'turn:global.relay.metered.ca:443',
-      username: 'd7e3ad3d6e00da2fda92f5f9',
-      credential: 's224R/i7rztN5wvF',
-    },
-    {
-      urls: 'turn:global.relay.metered.ca:443?transport=tcp',
-      username: 'd7e3ad3d6e00da2fda92f5f9',
-      credential: 's224R/i7rztN5wvF',
-    },
-  ],
-};
+import api from '../services/api';
 
 // Use module-level singletons so multiple components calling useWebRTC share the same state
 let globalPeerConnection = null;
 let globalCandidateQueue = [];
+let cachedIceServers = null;
+
+const getIceServers = async () => {
+  if (cachedIceServers) return cachedIceServers;
+  
+  try {
+    const { data } = await api.get('/turn/credentials');
+    cachedIceServers = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        ...data
+      ]
+    };
+    return cachedIceServers;
+  } catch (error) {
+    console.error('Failed to fetch TURN credentials, falling back to STUN:', error);
+    return {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    };
+  }
+};
 
 export const useWebRTC = () => {
   const user = useAuthStore((state) => state.user);
@@ -60,9 +64,10 @@ export const useWebRTC = () => {
     globalCandidateQueue = [];
   }, []);
 
-  const createPeerConnection = (targetUserId) => {
+  const createPeerConnection = async (targetUserId) => {
     const socket = getSocket();
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+    const servers = await getIceServers();
+    const pc = new RTCPeerConnection(servers);
     globalPeerConnection = pc;
 
     pc.onicecandidate = (event) => {
@@ -160,7 +165,7 @@ export const processIceCandidate = async (candidate) => {
 
       setLocalStream(stream);
 
-      const pc = createPeerConnection(receiverUser._id);
+      const pc = await createPeerConnection(receiverUser._id);
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       const offer = await pc.createOffer();
@@ -323,7 +328,7 @@ export const processIceCandidate = async (candidate) => {
         },
       });
 
-      const pc = createPeerConnection(incomingCallData.from);
+      const pc = await createPeerConnection(incomingCallData.from);
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCallData.signal));
