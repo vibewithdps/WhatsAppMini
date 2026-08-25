@@ -5,7 +5,6 @@ import { useChatStore } from '../store/useChatStore';
 import { useCallStore } from '../store/useCallStore';
 import { stopIncomingRingtone } from '../services/audio';
 import api from '../services/api';
-import { processIceCandidate } from './useWebRTC';
 
 export const useSocket = () => {
   const user = useAuthStore((state) => state.user);
@@ -70,10 +69,6 @@ export const useSocket = () => {
       endActiveCall(false);
     });
 
-    socket.on('ice_candidate', ({ candidate }) => {
-      processIceCandidate(candidate);
-    });
-
     // Safe background auto-sync polling every 4 seconds (preserves pending optimistic messages)
     const syncInterval = setInterval(async () => {
       const activeChat = useChatStore.getState().activeChat;
@@ -112,7 +107,6 @@ export const useSocket = () => {
       socket.off('incoming_group_call');
       socket.off('call_ended');
       socket.off('call_rejected');
-      socket.off('ice_candidate');
     };
   }, [user, receiveMessage, handleReadReceipt, setTyping, setOnlineUsers, setUserStatus, handleIncomingCall, endActiveCall]);
 };

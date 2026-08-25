@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "agora-rtc-react": "^2.5.1",
+    "agora-rtc-sdk-ng": "^4.24.7",
     "axios": "^1.7.9",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
