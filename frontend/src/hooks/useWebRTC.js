@@ -124,25 +124,36 @@ export const useWebRTC = () => {
       }
     };
 
-    // Attach ICE candidate socket listener immediately
-    if (socket) {
-      socket.off('ice_candidate');
-      socket.on('ice_candidate', async ({ candidate }) => {
-        if (!pc || pc.signalingState === 'closed' || !candidate) return;
-        if (pc.remoteDescription && pc.remoteDescription.type) {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
-          } catch (e) {
-            console.warn('addIceCandidate error:', e);
-          }
-        } else {
-          candidateQueueRef.current.push(candidate);
-        }
-      });
-    }
-
     return pc;
   };
+
+  // Listen for ICE candidates globally to prevent race conditions
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket || !user) return;
+
+    const handleIceCandidate = async ({ candidate }) => {
+      const pc = peerConnectionRef.current;
+      if (!candidate) return;
+      
+      if (!pc || pc.signalingState === 'closed' || !pc.remoteDescription) {
+        // PeerConnection not ready or remote description not set, queue it
+        candidateQueueRef.current.push(candidate);
+      } else {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.warn('addIceCandidate error:', e);
+        }
+      }
+    };
+
+    socket.on('ice_candidate', handleIceCandidate);
+
+    return () => {
+      socket.off('ice_candidate', handleIceCandidate);
+    };
+  }, [user]);
 
   /**
    * Start 1-on-1 Outgoing Call

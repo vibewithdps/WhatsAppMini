@@ -4,7 +4,7 @@ import { useChatStore } from './store/useChatStore';
 import { useThemeStore } from './store/useThemeStore';
 import { usePWAStore } from './store/usePWAStore';
 import { useSocket } from './hooks/useSocket';
-import { initSocket } from './services/socket';
+import { initSocket, getSocket } from './services/socket';
 import api from './services/api';
 
 import { SplashScreen } from './components/SplashScreen';
@@ -61,10 +61,14 @@ export default function App() {
     };
   }, [setDeferredPrompt]);
 
-  // Connect socket and fetch chats on login
+  // Initialize socket immediately if user exists to prevent race conditions in child hooks
+  if (user && !getSocket()) {
+    initSocket(user);
+  }
+
+  // Fetch chats on login
   useEffect(() => {
     if (user) {
-      initSocket(user);
       fetchChats();
 
       // Check if opened from native phone camera QR scan with ?linkSession=...
