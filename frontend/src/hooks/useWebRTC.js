@@ -76,7 +76,6 @@ export const useWebRTC = () => {
     const socket = getSocket();
     const pc = new RTCPeerConnection(ICE_SERVERS);
     globalPeerConnection = pc;
-    globalCandidateQueue = [];
 
     pc.onicecandidate = (event) => {
       if (event.candidate && socket) {
