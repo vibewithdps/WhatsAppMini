@@ -5,23 +5,12 @@ import { useAuthStore } from '../store/useAuthStore';
 import { stopIncomingRingtone } from '../services/audio';
 
 const ICE_SERVERS = {
-  // ... keep existing iceServers array ...
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478' },
-    { urls: 'stun:stun.cloudflare.com:3478' },
     { urls: 'stun:stun.relay.metered.ca:80' },
     {
       urls: 'turn:global.relay.metered.ca:80',
-      username: 'd7e3ad3d6e00da2fda92f5f9',
-      credential: 's224R/i7rztN5wvF',
-    },
-    {
-      urls: 'turn:global.relay.metered.ca:80?transport=tcp',
       username: 'd7e3ad3d6e00da2fda92f5f9',
       credential: 's224R/i7rztN5wvF',
     },
@@ -31,27 +20,11 @@ const ICE_SERVERS = {
       credential: 's224R/i7rztN5wvF',
     },
     {
-      urls: 'turns:global.relay.metered.ca:443?transport=tcp',
+      urls: 'turn:global.relay.metered.ca:443?transport=tcp',
       username: 'd7e3ad3d6e00da2fda92f5f9',
       credential: 's224R/i7rztN5wvF',
     },
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
   ],
-  iceCandidatePoolSize: 10,
 };
 
 // Use module-level singletons so multiple components calling useWebRTC share the same state
