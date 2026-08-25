@@ -149,7 +149,7 @@ const CallUI = () => {
 };
 
 // Root Component providing the Agora Client Context
-const CallScreen = () => {
+export const CallScreen = () => {
   const agoraClient = useRTCClient(AgoraRTC.createClient({ codec: 'vp8', mode: 'rtc' }));
   return (
     <AgoraRTCProvider client={agoraClient}>
@@ -157,5 +157,3 @@ const CallScreen = () => {
     </AgoraRTCProvider>
   );
 };
-
-export default CallScreen;
