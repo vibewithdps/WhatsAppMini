@@ -29,7 +29,7 @@ export const ProfileModal = ({ isOpen, onClose }) => {
     e.preventDefault();
     e.stopPropagation();
     openImageViewer({
-      imageUrl: avatarPreview || user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      imageUrl: avatarPreview || user?.avatar || '/default-avatar.svg',
       title: user?.name || 'My Profile',
       subtitle: user?.phone || user?.email || '',
     });
@@ -80,7 +80,7 @@ export const ProfileModal = ({ isOpen, onClose }) => {
               <img
                 src={
                   avatarPreview ||
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                  '/default-avatar.svg'
                 }
                 alt={name}
                 className="w-28 h-28 rounded-full object-cover shadow-lg border-2 border-wa-dark-border"

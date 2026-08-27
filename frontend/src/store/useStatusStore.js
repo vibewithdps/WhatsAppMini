@@ -43,9 +43,7 @@ export const useStatusStore = create((set, get) => ({
       if (font) formData.append('font', font);
       if (mediaFile) formData.append('media', mediaFile);
 
-      await api.post('/status', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      await api.post('/status', formData);
 
       set({ isCreateStatusModalOpen: false });
       get().fetchStatusFeed();

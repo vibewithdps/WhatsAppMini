@@ -79,7 +79,7 @@ export const GroupInfoModal = () => {
 
   const handleViewGroupPhoto = () => {
     openImageViewer({
-      imageUrl: activeChat.chatAvatar || 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150',
+      imageUrl: activeChat.chatAvatar || '/default-avatar.svg',
       title: activeChat.chatName,
       subtitle: `Group • ${activeChat.users?.length || 0} participants`,
     });
@@ -87,7 +87,7 @@ export const GroupInfoModal = () => {
 
   const handleViewMemberPhoto = (member) => {
     openImageViewer({
-      imageUrl: member.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      imageUrl: member.avatar || '/default-avatar.svg',
       title: member.name,
       subtitle: member.about || member.phone || '',
       user: member,
@@ -120,7 +120,7 @@ export const GroupInfoModal = () => {
               <img
                 src={
                   activeChat.chatAvatar ||
-                  'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150'
+                  '/default-avatar.svg'
                 }
                 alt={activeChat.chatName}
                 className="w-24 h-24 rounded-full object-cover shadow-lg border-2 border-wa-dark-border ring-2 ring-transparent group-hover:ring-wa-green transition-all"
@@ -188,7 +188,7 @@ export const GroupInfoModal = () => {
                         <img
                           src={
                             member.avatar ||
-                            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                            '/default-avatar.svg'
                           }
                           alt={member.name}
                           className="w-10 h-10 rounded-full object-cover ring-2 ring-transparent group-hover/avatar:ring-wa-green transition-all"

@@ -83,9 +83,7 @@ export const useAuthStore = create((set, get) => ({
   updateProfile: async (formData) => {
     set({ isLoading: true });
     try {
-      const res = await api.put('/auth/profile', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await api.put('/auth/profile', formData);
       const updatedUser = res.data.user;
       localStorage.setItem('wa_user', JSON.stringify(updatedUser));
       set({ user: updatedUser, isLoading: false });

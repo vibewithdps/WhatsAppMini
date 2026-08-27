@@ -75,7 +75,7 @@ export const CallsTab = () => {
                   <img
                     src={
                       peer?.avatar ||
-                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                      '/default-avatar.svg'
                     }
                     alt={peer?.name || 'Contact'}
                     className="w-12 h-12 rounded-full object-cover flex-shrink-0"

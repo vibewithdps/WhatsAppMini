@@ -93,7 +93,7 @@ export const StatusViewerModal = () => {
               <img
                 src={
                   activeViewingGroup.user?.avatar ||
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                  '/default-avatar.svg'
                 }
                 alt={activeViewingGroup.user?.name}
                 className="w-10 h-10 rounded-full object-cover ring-2 ring-white"
@@ -220,7 +220,7 @@ export const StatusViewerModal = () => {
                 story.viewers?.map((v, idx) => (
                   <div key={idx} className="flex items-center gap-3 p-3 hover:bg-wa-dark-bg/50 rounded-xl transition-colors">
                     <img
-                      src={v.user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                      src={v.user?.avatar || '/default-avatar.svg'}
                       alt={v.user?.name}
                       className="w-10 h-10 rounded-full object-cover"
                     />

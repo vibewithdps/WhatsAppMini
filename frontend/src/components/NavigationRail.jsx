@@ -52,7 +52,7 @@ export const NavigationRail = ({
             <img
               src={
                 user?.avatar ||
-                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                '/default-avatar.svg'
               }
               alt={user?.name}
               className="w-9 h-9 rounded-full object-cover ring-2 ring-transparent group-hover:ring-wa-green transition-all"
@@ -208,7 +208,7 @@ export const NavigationRail = ({
           <img
             src={
               user?.avatar ||
-              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+              '/default-avatar.svg'
             }
             alt={user?.name}
             className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover ring-2 ring-wa-green"

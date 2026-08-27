@@ -49,6 +49,25 @@ export const NewChatModal = () => {
     }
   };
 
+  const handlePickContact = async () => {
+    const supported = ('contacts' in navigator && 'ContactsManager' in window);
+    if (!supported) {
+      alert("Your browser/device (like iPhone) does not support picking contacts directly from the web.");
+      return;
+    }
+    try {
+      const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: false });
+      if (contacts && contacts.length > 0 && contacts[0].tel && contacts[0].tel.length > 0) {
+        let pickedNumber = contacts[0].tel[0];
+        // Clean number to match format (keep digits and +)
+        pickedNumber = pickedNumber.replace(/[^\d+]/g, '');
+        setNewContact(pickedNumber);
+      }
+    } catch (ex) {
+      console.error("Error picking contact:", ex);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-wa-dark-panel dark:bg-wa-dark-panel bg-wa-light-panel w-full max-w-md rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-wa-dark-border max-h-[85vh]">
@@ -111,6 +130,14 @@ export const NewChatModal = () => {
               Add
             </button>
           </form>
+          {('contacts' in navigator && 'ContactsManager' in window) && (
+            <button
+              onClick={handlePickContact}
+              className="w-full mt-2 py-2 text-xs font-semibold text-cyan-500 hover:text-cyan-400 border border-cyan-500/30 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors"
+            >
+              + Pick from Phone Contacts (Android)
+            </button>
+          )}
         </div>
 
         {/* User list */}
@@ -134,7 +161,7 @@ export const NewChatModal = () => {
                 <img
                   src={
                     u.avatar ||
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                    '/default-avatar.svg'
                   }
                   alt={u.name}
                   className="w-11 h-11 rounded-full object-cover"

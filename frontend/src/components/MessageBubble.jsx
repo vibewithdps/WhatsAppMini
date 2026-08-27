@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Check,
   CheckCheck,
@@ -34,6 +34,23 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
   const isDeleted = message.isDeletedForEveryone;
   const isStarred = message.isStarred?.includes(user?._id);
   const isEncrypted = message.encrypted;
+
+  const [decryptedContent, setDecryptedContent] = useState(message.content);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (isEncrypted && message.content?.startsWith('enc:')) {
+      import('../services/crypto').then(({ decryptMessage }) => {
+        const chatId = typeof message.chat === 'object' ? message.chat?._id : message.chat;
+        decryptMessage(message.content, chatId).then((res) => {
+          if (isMounted) setDecryptedContent(res);
+        });
+      });
+    } else {
+      setDecryptedContent(message.content);
+    }
+    return () => { isMounted = false; };
+  }, [message.content, isEncrypted, message.chat]);
 
   // Read receipts
   const isReadByRecipient =
@@ -206,7 +223,7 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
                     : 'text-wa-text-primary'
                 }`}
               >
-                {message.content}
+                {decryptedContent}
               </span>
               <p className="text-xs text-wa-text-secondary mt-0.5">
                 {message.callDetails?.status === 'completed' && message.callDetails?.duration > 0
@@ -224,23 +241,23 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
           <div className="break-words text-sm whitespace-pre-wrap leading-relaxed">
             {isDeleted ? (
               <span className="italic text-wa-text-secondary text-xs">
-                🚫 {message.content}
+                🚫 {decryptedContent}
               </span>
             ) : (
               <>
                 {isEncrypted && (
                   <Lock className="w-3.5 h-3.5 inline mr-1.5 text-wa-green" />
                 )}
-                {message.content && message.content.startsWith('📍 Live Location:') ? (
+                {decryptedContent && decryptedContent.startsWith('📍 Live Location:') ? (
                   <div className="flex flex-col gap-2 mt-1">
                     <a
-                      href={message.content.split('📍 Live Location: ')[1]}
+                      href={decryptedContent.split('📍 Live Location: ')[1]}
                       target="_blank"
                       rel="noreferrer"
                       className="block relative overflow-hidden rounded-xl bg-wa-dark-bg/50 border border-wa-dark-border group"
                     >
                       <img
-                        src={`https://staticmap.openstreetmap.de/staticmap.php?center=${message.content.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[1]},${message.content.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[2]}&zoom=15&size=400x200&markers=${message.content.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[1]},${message.content.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[2]}`}
+                        src={`https://staticmap.openstreetmap.de/staticmap.php?center=${decryptedContent.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[1]},${decryptedContent.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[2]}&zoom=15&size=400x200&markers=${decryptedContent.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[1]},${decryptedContent.match(/q=(-?[\d.]+),(-?[\d.]+)/)?.[2]}`}
                         alt="Map Preview"
                         className="w-full h-32 md:h-40 object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                         onError={(e) => {
@@ -254,16 +271,16 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
                       </div>
                     </a>
                     <a
-                      href={message.content.split('📍 Live Location: ')[1]}
+                      href={decryptedContent.split('📍 Live Location: ')[1]}
                       target="_blank"
                       rel="noreferrer"
                       className="text-wa-blue-tick hover:underline text-xs"
                     >
-                      {message.content.split('📍 Live Location: ')[1]}
+                      {decryptedContent.split('📍 Live Location: ')[1]}
                     </a>
                   </div>
                 ) : (
-                  message.content
+                  decryptedContent
                 )}
               </>
             )}

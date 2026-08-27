@@ -18,7 +18,7 @@ export const IncomingCallModal = () => {
           <img
             src={
               caller.avatar ||
-              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+              '/default-avatar.svg'
             }
             alt={caller.name}
             className="w-28 h-28 rounded-full object-cover relative z-10 shadow-lg ring-4 ring-wa-green"

@@ -95,7 +95,7 @@ export const ForwardModal = () => {
                   <img
                     src={
                       chatAvatar ||
-                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                      '/default-avatar.svg'
                     }
                     alt={chatName}
                     className="w-10 h-10 rounded-full object-cover"

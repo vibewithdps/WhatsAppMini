@@ -57,7 +57,7 @@ export const StatusTab = () => {
                 <img
                   src={
                     user?.avatar ||
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                    '/default-avatar.svg'
                   }
                   alt={user?.name}
                   className={`w-12 h-12 rounded-full object-cover ${
@@ -111,7 +111,7 @@ export const StatusTab = () => {
                 <img
                   src={
                     group.user.avatar ||
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                    '/default-avatar.svg'
                   }
                   alt={group.user.name}
                   className="w-12 h-12 rounded-full object-cover ring-2 ring-wa-green ring-offset-2 ring-offset-wa-dark-panel"
@@ -146,7 +146,7 @@ export const StatusTab = () => {
                 <img
                   src={
                     group.user.avatar ||
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                    '/default-avatar.svg'
                   }
                   alt={group.user.name}
                   className="w-12 h-12 rounded-full object-cover ring-2 ring-wa-text-secondary/50 ring-offset-2 ring-offset-wa-dark-panel"

@@ -65,9 +65,7 @@ export const CreateGroupModal = () => {
         formData.append('avatar', avatarFile);
       }
 
-      const res = await api.post('/chats/group', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await api.post('/chats/group', formData);
 
       await fetchChats();
       selectChat(res.data);
@@ -169,7 +167,7 @@ export const CreateGroupModal = () => {
                   <img
                     src={
                       u.avatar ||
-                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                      '/default-avatar.svg'
                     }
                     alt={u.name}
                     className="w-10 h-10 rounded-full object-cover"

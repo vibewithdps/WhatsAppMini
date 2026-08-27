@@ -3,6 +3,7 @@ import api from '../services/api';
 import { getSocket } from '../services/socket';
 import { playMessageSentSound, playMessageReceivedSound } from '../services/audio';
 import { useAuthStore } from './useAuthStore';
+import { decryptMessage } from '../services/crypto';
 
 export const useChatStore = create((set, get) => ({
   chats: [],
@@ -40,7 +41,13 @@ export const useChatStore = create((set, get) => ({
     set({ isLoadingChats: true });
     try {
       const res = await api.get('/chats');
-      set({ chats: res.data, isLoadingChats: false });
+      const decryptedChats = await Promise.all(res.data.map(async (chat) => {
+        if (chat.latestMessage?.encrypted && chat.latestMessage?.content?.startsWith('enc:')) {
+          chat.latestMessage.content = await decryptMessage(chat.latestMessage.content, chat._id);
+        }
+        return chat;
+      }));
+      set({ chats: decryptedChats, isLoadingChats: false });
     } catch (err) {
       console.error('Failed to fetch chats:', err);
       set({ isLoadingChats: false });
@@ -70,7 +77,13 @@ export const useChatStore = create((set, get) => ({
     set({ isLoadingMessages: true });
     try {
       const res = await api.get(`/messages/${chatId}`);
-      set({ messages: res.data, isLoadingMessages: false });
+      const decryptedMessages = await Promise.all(res.data.map(async (msg) => {
+        if (msg.encrypted && msg.content?.startsWith('enc:')) {
+          msg.content = await decryptMessage(msg.content, chatId);
+        }
+        return msg;
+      }));
+      set({ messages: decryptedMessages, isLoadingMessages: false });
     } catch (err) {
       console.error('Failed to fetch messages:', err);
       set({ isLoadingMessages: false });
@@ -167,7 +180,11 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  receiveMessage: (message) => {
+  receiveMessage: async (message) => {
+    if (message.encrypted && message.content?.startsWith('enc:')) {
+      const chatId = typeof message.chat === 'object' ? message.chat?._id : message.chat;
+      message.content = await decryptMessage(message.content, chatId);
+    }
     const activeChat = get().activeChat;
     const isCurrentChat = activeChat && (activeChat._id === message.chat?._id || activeChat._id === message.chat);
 

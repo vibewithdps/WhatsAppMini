@@ -135,7 +135,7 @@ const CallUI = () => {
                 ))
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-[#111b21]">
-                  <img src={peer.avatar || '/default-avatar.png'} alt={peer.name} className="w-32 h-32 rounded-full mb-6 shadow-2xl object-cover ring-4 ring-wa-dark-border" />
+                  <img src={peer.avatar || '/default-avatar.svg'} alt={peer.name} className="w-32 h-32 rounded-full mb-6 shadow-2xl object-cover ring-4 ring-wa-dark-border" />
                   <h2 className="text-white text-3xl font-normal tracking-wide">
                     {peer.name}
                   </h2>
@@ -169,7 +169,7 @@ const CallUI = () => {
           <div className="w-full max-w-sm flex flex-col items-center mt-[-10vh]">
             <div className="relative mb-8">
               <div className={`absolute inset-0 bg-wa-green/20 rounded-full blur-xl scale-110 transition-opacity duration-1000 ${(callStatus === 'calling' || !isConnected) ? 'opacity-100 animate-pulse' : 'opacity-0'}`}></div>
-              <img src={peer.avatar || '/default-avatar.png'} alt={peer.name} className="w-40 h-40 rounded-full object-cover shadow-2xl ring-4 ring-wa-dark-panel z-10 relative" />
+              <img src={peer.avatar || '/default-avatar.svg'} alt={peer.name} className="w-40 h-40 rounded-full object-cover shadow-2xl ring-4 ring-wa-dark-panel z-10 relative" />
             </div>
             
             <h2 className="text-white text-3xl font-normal tracking-wide text-center px-4 mb-2">

@@ -3,6 +3,7 @@ import {
   Search,
   Plus,
   Users,
+  MoreVertical,
   Pin,
   Check,
   CheckCheck,
@@ -68,7 +69,7 @@ export const ChatList = () => {
     if (chat.isGroupChat) {
       return {
         name: chat.chatName || 'Group Chat',
-        avatar: chat.chatAvatar || 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150',
+        avatar: chat.chatAvatar || '/default-avatar.svg',
         isOnline: false,
       };
     }
@@ -77,7 +78,7 @@ export const ChatList = () => {
 
     return {
       name: otherUser?.name || 'Contact',
-      avatar: otherUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      avatar: otherUser?.avatar || '/default-avatar.svg',
       isOnline,
     };
   };
@@ -85,22 +86,21 @@ export const ChatList = () => {
   return (
     <div className="w-full h-full flex flex-col bg-wa-dark-panel dark:bg-wa-dark-panel bg-wa-light-panel border-r border-wa-dark-border dark:border-wa-dark-border border-wa-light-border pb-16 lg:pb-0">
       {/* Header */}
-      <div className="p-3 sm:p-4 flex items-center justify-between border-b border-wa-dark-border dark:border-wa-dark-border border-wa-light-border">
-        <h1 className="text-xl sm:text-2xl font-bold text-wa-text-primary">
-          Chats
+      <div className="p-3 sm:p-4 flex items-center justify-between bg-white dark:bg-wa-dark-panel">
+        <h1 className="text-xl font-bold text-[#25d366] tracking-tight">
+          WhatsApp
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsCreateGroupModalOpen(true)}
-            title="New Group"
-            className="p-2 text-wa-text-secondary hover:text-wa-text-primary hover:bg-wa-dark-hover dark:hover:bg-wa-dark-hover hover:bg-wa-light-hover rounded-full transition-colors"
+            title="Menu"
+            className="text-[#54656f] dark:text-gray-300 hover:text-gray-700 transition-colors"
           >
-            <Users className="w-5 h-5" />
+            <MoreVertical className="w-5 h-5" />
           </button>
           <button
             onClick={() => setIsNewChatModalOpen(true)}
             title="New Chat"
-            className="p-2 bg-wa-green text-white rounded-full hover:bg-wa-green-dark transition-colors shadow"
+            className="p-1.5 bg-[#00a884] text-white rounded-md hover:bg-[#06cf9c] transition-colors shadow-sm"
           >
             <Plus className="w-5 h-5" />
           </button>
