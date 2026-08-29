@@ -14,6 +14,7 @@ import {
   Lock,
   Phone,
   Video,
+  Maximize2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useImageViewerStore } from '../store/useImageViewerStore';
