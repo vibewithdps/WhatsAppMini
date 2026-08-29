@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, Trash2, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useStatusStore } from '../store/useStatusStore';
