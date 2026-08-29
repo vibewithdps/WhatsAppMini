@@ -166,3 +166,18 @@ export const deleteStatus = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, message: 'Status deleted successfully' });
 });
+
+export const toggleStatusLike = asyncHandler(async (req, res) => {
+  const status = await Status.findById(req.params.statusId);
+  if (!status) { res.status(404); throw new Error('Status not found'); }
+  
+  const userId = req.user._id;
+  const isLiked = status.likes.includes(userId);
+  if (isLiked) {
+    status.likes = status.likes.filter(id => id.toString() !== userId.toString());
+  } else {
+    status.likes.push(userId);
+  }
+  await status.save();
+  res.status(200).json({ success: true, likes: status.likes });
+});

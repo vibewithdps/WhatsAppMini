@@ -1,12 +1,48 @@
 import React, { useState } from 'react';
 import { X, Send, FileText } from 'lucide-react';
 import { useChatStore } from '../store/useChatStore';
+import ReactCrop from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+import { Crop } from 'lucide-react';
 
 export const MediaPreviewModal = () => {
   const { isMediaPreviewOpen, pendingMediaFile, setPendingMedia, sendMessage, quotedMessage } =
     useChatStore();
   const [caption, setCaption] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isCropping, setIsCropping] = useState(false);
+  const [crop, setCrop] = useState();
+  const [completedCrop, setCompletedCrop] = useState(null);
+  const imgRef = React.useRef(null);
+
+  const getCroppedImg = async (image, crop, fileName) => {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext('2d');
+
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    );
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        blob.name = fileName;
+        resolve(new File([blob], fileName, { type: 'image/jpeg' }));
+      }, 'image/jpeg');
+    });
+  };
 
   if (!isMediaPreviewOpen || !pendingMediaFile) return null;
 
@@ -18,9 +54,13 @@ export const MediaPreviewModal = () => {
     if (isSending) return;
     setIsSending(true);
     try {
+      let finalFile = pendingMediaFile;
+      if (completedCrop && imgRef.current) {
+        finalFile = await getCroppedImg(imgRef.current, completedCrop, pendingMediaFile.name);
+      }
       await sendMessage({
         content: caption,
-        file: pendingMediaFile,
+        file: finalFile,
         replyToId: quotedMessage?._id,
       });
       setCaption('');
@@ -50,12 +90,31 @@ export const MediaPreviewModal = () => {
 
         {/* Media Preview Container */}
         <div className="p-6 flex-1 flex items-center justify-center bg-black/40 overflow-hidden min-h-[250px]">
-          {isImage && (
+          {isImage && !isCropping && (
             <img
               src={previewUrl}
               alt="Preview"
               className="max-h-80 w-auto object-contain rounded-lg shadow"
             />
+          )}
+          
+          {isImage && isCropping && (
+            <ReactCrop 
+              crop={crop} 
+              onChange={(c) => setCrop(c)}
+              onComplete={(c) => setCompletedCrop(c)}
+            >
+              <img
+                ref={imgRef}
+                src={previewUrl}
+                alt="Crop preview"
+                className="max-h-[60vh] w-auto object-contain"
+                onLoad={(e) => {
+                  const { width, height } = e.currentTarget;
+                  setCrop({ unit: 'px', width: width * 0.8, height: height * 0.8, x: width * 0.1, y: height * 0.1 });
+                }}
+              />
+            </ReactCrop>
           )}
 
           {isVideo && (
@@ -79,8 +138,20 @@ export const MediaPreviewModal = () => {
           )}
         </div>
 
+        {/* Controls */}
+        <div className="px-4 pt-3 flex justify-end gap-2">
+           {isImage && (
+             <button 
+               onClick={() => setIsCropping(!isCropping)}
+               className={`p-2 rounded-full ${isCropping ? 'bg-wa-green text-white' : 'bg-gray-200 dark:bg-gray-800 text-wa-text-primary'}`}
+               title="Crop Image"
+             >
+               <Crop className="w-5 h-5" />
+             </button>
+           )}
+        </div>
         {/* Caption Input & Send */}
-        <div className="p-4 border-t border-wa-dark-border flex items-center gap-3">
+        <div className="p-4 border-t border-wa-dark-border flex items-center gap-3 mt-2">
           <input
             type="text"
             value={caption}

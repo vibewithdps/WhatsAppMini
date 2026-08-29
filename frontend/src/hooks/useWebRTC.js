@@ -272,7 +272,59 @@ export const useWebRTC = () => {
   };
 
   const toggleScreenShare = async () => {
-    alert("Screen sharing not yet supported in free mode.");
+    if (!peerConnection) return;
+    try {
+      const currentStream = useCallStore.getState().localStream;
+      const isScreenSharing = useCallStore.getState().isScreenSharing;
+      if (!currentStream) return;
+      
+      const videoTrack = currentStream.getVideoTracks()[0];
+      if (!videoTrack) return;
+      
+      let newVideoTrack;
+      
+      if (!isScreenSharing) {
+        // Start screen sharing
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        newVideoTrack = displayStream.getVideoTracks()[0];
+        
+        // Listen for user stopping screen share via browser UI
+        newVideoTrack.onended = () => {
+          toggleScreenShare(); // Revert back to camera
+        };
+        
+        useCallStore.setState({ isScreenSharing: true });
+      } else {
+        // Revert to camera
+        const newFacingMode = window.currentFacingMode || 'user';
+        let camStream;
+        try {
+          camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: newFacingMode } } });
+        } catch(e) {
+          camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
+        newVideoTrack = camStream.getVideoTracks()[0];
+        useCallStore.setState({ isScreenSharing: false });
+      }
+      
+      // Replace track in peer connection
+      const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+      if (sender) {
+        await sender.replaceTrack(newVideoTrack);
+      }
+      
+      // Update local stream
+      videoTrack.stop();
+      currentStream.removeTrack(videoTrack);
+      currentStream.addTrack(newVideoTrack);
+      
+      const clonedStream = new MediaStream(currentStream.getTracks());
+      useCallStore.setState({ localStream: clonedStream });
+      
+    } catch (e) {
+      console.error("Screen share failed:", e);
+      useCallStore.setState({ isScreenSharing: false });
+    }
   };
 
   return {

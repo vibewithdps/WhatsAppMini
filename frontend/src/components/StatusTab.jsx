@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Search, MoreVertical, Plus, Edit2, Camera, Compass } from 'lucide-react';
 import { useStatusStore } from '../store/useStatusStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { Eye } from 'lucide-react';
 
 export const StatusTab = () => {
   const user = useAuthStore((state) => state.user);
@@ -80,9 +81,41 @@ export const StatusTab = () => {
             ))}
           </div>
         </div>
-
-        <div className="h-2 bg-[#f0f2f5] dark:bg-black/20 my-2" />
-
+        
+        {/* Viewed Updates Section */}
+        {statusFeed?.viewedUpdates?.length > 0 && (
+          <>
+            <div className="h-2 bg-[#f0f2f5] dark:bg-black/20 my-2" />
+            <div className="px-4 py-2">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <h2 className="text-sm font-semibold text-wa-text-secondary">Viewed updates</h2>
+              </div>
+              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                {statusFeed.viewedUpdates.map(status => (
+                  <div 
+                    key={status.user._id}
+                    onClick={() => openStoryViewer(status)}
+                    className="flex-shrink-0 w-24 h-36 rounded-2xl relative overflow-hidden bg-gray-800 cursor-pointer opacity-80"
+                  >
+                    {/* Background Preview */}
+                    {status.stories[0]?.mediaUrl ? (
+                      <img src={status.stories[0].mediaUrl} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-500" />
+                    )}
+                    {/* Avatar */}
+                    <div className="absolute top-2 left-2 w-9 h-9 rounded-full border-2 border-gray-400 overflow-hidden bg-white">
+                      <img src={status.user.avatar || '/default-avatar.svg'} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="absolute bottom-2 left-2 text-white text-xs font-medium drop-shadow-md truncate w-20">
+                      {status.user.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
         </div>
 
       {/* FABs */}

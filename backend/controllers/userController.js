@@ -275,3 +275,21 @@ export const toggleFavoriteChat = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, favoriteChats: user.favoriteChats });
 });
+
+export const subscribePush = asyncHandler(async (req, res) => {
+  const { subscription } = req.body;
+  if (!subscription) {
+    res.status(400); throw new Error('Missing subscription');
+  }
+
+  const user = await User.findById(req.user._id);
+  // Check if subscription already exists
+  const exists = user.pushSubscriptions.some(sub => sub.endpoint === subscription.endpoint);
+  
+  if (!exists) {
+    user.pushSubscriptions.push(subscription);
+    await user.save();
+  }
+
+  res.status(200).json({ success: true });
+});

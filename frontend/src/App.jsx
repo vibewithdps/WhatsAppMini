@@ -3,6 +3,7 @@ import { useAuthStore } from './store/useAuthStore';
 import { useChatStore } from './store/useChatStore';
 import { useThemeStore } from './store/useThemeStore';
 import { usePWAStore } from './store/usePWAStore';
+import api from './services/api';
 import { useSocket } from './hooks/useSocket';
 import { initSocket, getSocket } from './services/socket';
 import api from './services/api';
@@ -71,6 +72,23 @@ export default function App() {
   useEffect(() => {
     if (user) {
       fetchChats();
+
+
+      // Setup Push Notifications
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        navigator.serviceWorker.ready.then(registration => {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: 'BIZVlRy6DLjmFMgNpkRqyOB4nwLCPLXQTZJfW9wECJ8FWnZilqvaMrHMlZ-oGzUPRQ6KLZDEIr9PXe42aPIHyKU'
+              }).then(subscription => {
+                api.post('/users/subscribe-push', { subscription }).catch(console.error);
+              }).catch(console.error);
+            }
+          });
+        });
+      }
 
       // Check if opened from native phone camera QR scan with ?linkSession=...
       const params = new URLSearchParams(window.location.search);

@@ -16,6 +16,7 @@ import {
   Video,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useImageViewerStore } from '../store/useImageViewerStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useChatStore } from '../store/useChatStore';
 
@@ -112,10 +113,16 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
             {message.fileType === 'image' && (
               <div className="relative group">
                 <a
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openImageViewer({
+                      imageUrl: message.fileUrl,
+                      title: message.fileName || 'Photo',
+                      mediaType: 'image'
+                    });
+                  }}
                   href={message.fileUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block"
+                  className="block cursor-pointer"
                 >
                   <img
                     src={message.fileUrl}
@@ -146,8 +153,27 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
                 <video
                   src={message.fileUrl}
                   controls
+                  onClick={(e) => {
+                    // Only open viewer if they didn't click the controls
+                    // Native controls are hard to detect, but we can just let them use controls
+                    // Or we can add an expand icon!
+                  }}
                   className="max-h-72 w-full rounded-lg bg-black"
                 />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openImageViewer({
+                      imageUrl: message.fileUrl,
+                      title: message.fileName || 'Video',
+                      mediaType: 'video'
+                    });
+                  }}
+                  className="absolute bottom-2 left-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors z-10"
+                  title="Full Screen"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
                 <button
                   onClick={() => {
                     const link = document.createElement('a');

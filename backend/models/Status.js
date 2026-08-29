@@ -49,6 +49,7 @@ const statusSchema = new mongoose.Schema(
       default: 'sans-serif',
     },
     viewers: [viewerSchema],
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     createdAt: {
       type: Date,
       default: Date.now,

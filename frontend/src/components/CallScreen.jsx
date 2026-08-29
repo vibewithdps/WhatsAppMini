@@ -171,8 +171,19 @@ const CallUI = () => {
           <button
             onClick={flipCamera}
             className="p-4 rounded-full bg-white/10 hover:bg-white/20 transition-all text-white"
+            title="Flip Camera"
           >
             <RefreshCw size={24} />
+          </button>
+        )}
+        
+        {callType === 'video' && (
+          <button
+            onClick={toggleScreenShare}
+            className={`p-4 rounded-full transition-all ${isScreenSharing ? 'bg-blue-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+            title="Share Screen"
+          >
+            <MonitorUp size={24} />
           </button>
         )}
 
