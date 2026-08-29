@@ -5,6 +5,9 @@ import {
   Bell, Globe, HelpCircle, X, Share2
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { DownloadCloud } from 'lucide-react';
+import { usePWAStore } from '../../store/usePWAStore';
+import { InstallPwaModal } from '../InstallPwaModal';
 
 
 const QrModal = ({ isOpen, onClose, user }) => {
@@ -48,10 +51,13 @@ export const SettingsMainScreen = ({ onNavigate, onClose }) => {
   const user = useAuthStore((state) => state.user);
   const [qrOpen, setQrOpen] = useState(false);
   const logout = useAuthStore((state) => state.logout);
+  const { isInstalled } = usePWAStore();
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   return (
     <>
       <QrModal isOpen={qrOpen} onClose={() => setQrOpen(false)} user={user} />
+      <InstallPwaModal isOpen={showInstallModal} onClose={() => setShowInstallModal(false)} />
       <div className="flex items-center justify-between p-3 sm:p-4 bg-white dark:bg-wa-dark-bg border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-4">
           <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-[#111b21] dark:text-white transition-colors">
@@ -88,6 +94,15 @@ export const SettingsMainScreen = ({ onNavigate, onClose }) => {
           <SettingItem onClick={() => onNavigate('appearance')} icon={<Palette />} title="Appearance" subtitle="App theme (Dark/Light)" />
           <SettingItem onClick={() => onNavigate('notifications')} icon={<Bell />} title="Notifications" subtitle="Message, group & call tones" />
                     <SettingItem onClick={() => onNavigate('help')} icon={<HelpCircle />} title="Help and feedback" subtitle="Help center, contact us" />
+          
+          {!isInstalled && (
+            <SettingItem 
+              onClick={() => setShowInstallModal(true)} 
+              icon={<DownloadCloud className="text-[#00a884]" />} 
+              title="Install App" 
+              subtitle="Get the WhatsApp Mini desktop/mobile app" 
+            />
+          )}
           
           <div className="px-4 py-6 mt-4 border-t border-gray-100 dark:border-gray-800">
             <button onClick={logout} className="w-full py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors">

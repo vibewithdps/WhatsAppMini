@@ -41,7 +41,7 @@ export const SettingsModal = ({ isOpen, onClose }) => {
           />
         )}
       </div>
-      <InstallPwaModal isOpen={showInstallModal} onClose={() => setShowInstallModal(false)} />
+      
     </div>
   );
 };
