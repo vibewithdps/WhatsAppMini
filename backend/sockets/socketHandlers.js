@@ -1,7 +1,6 @@
 import User from '../models/User.js';
 import Message from '../models/Message.js';
 import webpush from '../config/webpush.js';
-import User from '../models/User.js';
 import Chat from '../models/Chat.js';
 import Call from '../models/Call.js';
 import { getCacheClient } from '../config/redis.js';
@@ -277,6 +276,7 @@ export const setupSocketHandlers = (io) => {
         } catch (err) {
           console.error('Error logging completed call to chat:', err.message);
         }
+      }
       }
     });
 
