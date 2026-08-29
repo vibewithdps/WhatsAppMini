@@ -39,6 +39,8 @@ const userSchema = new mongoose.Schema(
     savedContacts: { type: [String], default: [] },
     refreshToken: String,
     favoriteChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat' }],
+    lockedChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat' }],
+    chatLockPin: { type: String, default: null },
     pushSubscriptions: [{ type: Object }],
     pinnedChats: [
       {

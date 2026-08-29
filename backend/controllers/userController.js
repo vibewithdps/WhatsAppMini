@@ -293,3 +293,37 @@ export const subscribePush = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true });
 });
+
+export const toggleLockChat = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  const { chatId } = req.params;
+
+  const isLocked = user.lockedChats.includes(chatId);
+  if (isLocked) {
+    user.lockedChats = user.lockedChats.filter((id) => id.toString() !== chatId);
+  } else {
+    user.lockedChats.push(chatId);
+  }
+  await user.save();
+
+  res.status(200).json({ success: true, lockedChats: user.lockedChats });
+});
+
+export const verifyLockPin = asyncHandler(async (req, res) => {
+  const { pin } = req.body;
+  const user = await User.findById(req.user._id);
+  
+  if (!user.chatLockPin) {
+    // If no PIN is set, set it now
+    user.chatLockPin = pin;
+    await user.save();
+    res.status(200).json({ success: true, message: 'PIN set successfully' });
+  } else {
+    if (user.chatLockPin === pin) {
+      res.status(200).json({ success: true, message: 'PIN verified' });
+    } else {
+      res.status(401);
+      throw new Error('Incorrect PIN');
+    }
+  }
+});
