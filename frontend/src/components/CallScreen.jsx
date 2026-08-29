@@ -22,6 +22,7 @@ const CallUI = () => {
     endActiveCall,
     localStream,
     remoteStream,
+    isScreenSharing,
   } = useCallStore();
 
   const { toggleScreenShare, cleanupPeer, flipCamera } = useWebRTC();
