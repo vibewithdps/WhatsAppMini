@@ -18,21 +18,26 @@ const domainOnly = baseTurnUrl ? baseTurnUrl.replace('//', '').replace('turn:', 
 const ICE_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun.relay.metered.ca:80' },
     {
-      urls: `turn:${domainOnly}:80`,
-      username: TURN_USERNAME,
-      credential: TURN_CREDENTIAL,
+      urls: 'turn:global.relay.metered.ca:80',
+      username: 'd7e3ad3d6e00da2fda92f5f9',
+      credential: 's224R/i7rztN5wvF',
     },
     {
-      urls: `turn:${domainOnly}:443`,
-      username: TURN_USERNAME,
-      credential: TURN_CREDENTIAL,
+      urls: 'turn:global.relay.metered.ca:80?transport=tcp',
+      username: 'd7e3ad3d6e00da2fda92f5f9',
+      credential: 's224R/i7rztN5wvF',
     },
     {
-      urls: `turn:${domainOnly}:443?transport=tcp`,
-      username: TURN_USERNAME,
-      credential: TURN_CREDENTIAL,
+      urls: 'turn:global.relay.metered.ca:443',
+      username: 'd7e3ad3d6e00da2fda92f5f9',
+      credential: 's224R/i7rztN5wvF',
+    },
+    {
+      urls: 'turns:global.relay.metered.ca:443?transport=tcp',
+      username: 'd7e3ad3d6e00da2fda92f5f9',
+      credential: 's224R/i7rztN5wvF',
     }
   ]
 };
