@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema(
     },
     otp: String,
     otpExpiry: Date,
+    savedContacts: { type: [String], default: [] },
     refreshToken: String,
     pinnedChats: [
       {
