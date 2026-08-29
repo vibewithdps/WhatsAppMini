@@ -9,6 +9,7 @@ export const StatusTab = () => {
   const {
     myStatus,
     recentUpdates,
+    viewedUpdates,
     fetchStatusFeed,
     openStoryViewer,
     setIsCreateStatusModalOpen,
@@ -83,7 +84,7 @@ export const StatusTab = () => {
         </div>
         
         {/* Viewed Updates Section */}
-        {statusFeed?.viewedUpdates?.length > 0 && (
+        {viewedUpdates?.length > 0 && (
           <>
             <div className="h-2 bg-[#f0f2f5] dark:bg-black/20 my-2" />
             <div className="px-4 py-2">
@@ -91,7 +92,7 @@ export const StatusTab = () => {
                 <h2 className="text-sm font-semibold text-wa-text-secondary">Viewed updates</h2>
               </div>
               <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                {statusFeed.viewedUpdates.map(status => (
+                {viewedUpdates.map(status => (
                   <div 
                     key={status.user._id}
                     onClick={() => openStoryViewer(status)}
