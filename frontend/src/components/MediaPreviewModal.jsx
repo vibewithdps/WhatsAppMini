@@ -13,6 +13,7 @@ export const MediaPreviewModal = () => {
   const [isCropping, setIsCropping] = useState(false);
   const [crop, setCrop] = useState();
   const [completedCrop, setCompletedCrop] = useState(null);
+  const [croppedFile, setCroppedFile] = useState(null);
   const imgRef = React.useRef(null);
 
   const getCroppedImg = async (image, crop, fileName) => {
@@ -55,8 +56,12 @@ export const MediaPreviewModal = () => {
     setIsSending(true);
     try {
       let finalFile = pendingMediaFile;
-      if (completedCrop && imgRef.current) {
+      if (isCropping && completedCrop && imgRef.current) {
+        // If they send while cropping is still active
         finalFile = await getCroppedImg(imgRef.current, completedCrop, pendingMediaFile.name);
+      } else if (croppedFile) {
+        // If they already finished cropping and closed the crop view
+        finalFile = croppedFile;
       }
       await sendMessage({
         content: caption,
@@ -71,6 +76,18 @@ export const MediaPreviewModal = () => {
       setIsSending(false);
     }
   };
+
+  const handleToggleCrop = async () => {
+    if (isCropping) {
+      // Turning crop off -> generate and save cropped file for preview
+      if (completedCrop && imgRef.current) {
+        const file = await getCroppedImg(imgRef.current, completedCrop, pendingMediaFile.name);
+        setCroppedFile(file);
+      }
+    }
+    setIsCropping(!isCropping);
+  };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -92,7 +109,7 @@ export const MediaPreviewModal = () => {
         <div className="p-6 flex-1 flex items-center justify-center bg-black/40 overflow-hidden min-h-[250px]">
           {isImage && !isCropping && (
             <img
-              src={previewUrl}
+              src={croppedFile ? URL.createObjectURL(croppedFile) : previewUrl}
               alt="Preview"
               className="max-h-80 w-auto object-contain rounded-lg shadow"
             />
@@ -142,7 +159,7 @@ export const MediaPreviewModal = () => {
         <div className="px-4 pt-3 flex justify-end gap-2">
            {isImage && (
              <button 
-               onClick={() => setIsCropping(!isCropping)}
+               onClick={handleToggleCrop}
                className={`p-2 rounded-full ${isCropping ? 'bg-wa-green text-white' : 'bg-gray-200 dark:bg-gray-800 text-wa-text-primary'}`}
                title="Crop Image"
              >
