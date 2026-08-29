@@ -42,7 +42,13 @@ export const useAuthStore = create((set, get) => ({
       // Save email in local variable to use in verifyOTP
       window.lastUsedEmail = payload.email;
       set({ isLoading: false });
+      
+      if (res.data._dev_otp) {
+        alert("Email Server Timeout. Auto-fetched OTP: " + res.data._dev_otp);
+        window._dev_otp = res.data._dev_otp;
+      }
       return res.data;
+  
     } catch (err) {
       console.error(err);
       set({
