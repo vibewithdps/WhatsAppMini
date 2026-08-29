@@ -19,6 +19,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useImageViewerStore } from '../store/useImageViewerStore';
 import { Lock, Unlock, DownloadCloud } from 'lucide-react';
 import { usePWAStore } from '../store/usePWAStore';
+import { InstallPwaModal } from './InstallPwaModal';
 import api from '../services/api';
 
 export const ChatList = ({ onOpenSettings }) => {
@@ -29,6 +30,12 @@ export const ChatList = ({ onOpenSettings }) => {
   const [pinError, setPinError] = useState('');
   const [isLockedView, setIsLockedView] = useState(false);
   const { isInstallable, promptInstall } = usePWAStore();
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  
+  // Show the mobile banner if they haven't dismissed it, even if isInstallable is false (so iOS users can see instructions)
+  // Actually, let's just always show it if not installed.
+  const { isInstalled } = usePWAStore();
+
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const openImageViewer = useImageViewerStore((state) => state.openImageViewer);
@@ -233,14 +240,14 @@ export const ChatList = ({ onOpenSettings }) => {
       <div className="flex-1 overflow-y-auto pb-20 md:pb-2 divide-y divide-wa-dark-border/40 dark:divide-wa-dark-border/40 divide-wa-light-border/40">
         
         {/* PWA Mobile Banner */}
-        {isInstallable && (
+        {!isInstalled && (
           <div 
-            onClick={promptInstall}
+            onClick={() => setShowInstallModal(true)}
             className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#d9fdd3] dark:bg-[#005c4b] cursor-pointer"
           >
             <div className="flex items-center gap-3">
               <DownloadCloud className="w-5 h-5 text-[#111b21] dark:text-white" />
-              <span className="text-sm font-semibold text-[#111b21] dark:text-white">Install WhatsApp Mini</span>
+              <span className="text-sm font-semibold text-[#111b21] dark:text-white">Install WhatsApp Mini App</span>
             </div>
           </div>
         )}
@@ -430,6 +437,7 @@ export const ChatList = ({ onOpenSettings }) => {
           </button>
         </div>
       )}
+      <InstallPwaModal isOpen={showInstallModal} onClose={() => setShowInstallModal(false)} />
       {showPinModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <form onSubmit={handleVerifyPin} className="bg-white dark:bg-wa-dark-panel p-6 rounded-2xl w-full max-w-sm shadow-2xl">
