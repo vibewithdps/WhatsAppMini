@@ -118,14 +118,7 @@ export const NavigationRail = ({
 
         {/* Bottom Actions */}
         <div className="flex flex-col items-center gap-3">
-          {/* Install App / APK Button */}
-          <button
-            onClick={installApp}
-            title="Install WhatsApp Mini App / APK"
-            className="p-2.5 rounded-xl text-cyan-400 hover:bg-cyan-500/10 transition-colors animate-pulse"
-          >
-            <Download className="w-5 h-5" />
-          </button>
+
 
           {/* Theme Toggle */}
           <button
@@ -141,16 +134,7 @@ export const NavigationRail = ({
           </button>
 
 
-          {/* Install App */}
-          {isInstallable && (
-            <button
-              onClick={installApp}
-              title="Install App"
-              className="p-2.5 rounded-xl text-wa-green hover:text-wa-green-dark hover:bg-wa-green/10 transition-colors animate-pulse"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-          )}
+
 
           {/* Settings Modal */}
 

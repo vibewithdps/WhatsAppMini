@@ -17,7 +17,8 @@ import { format, isToday, isYesterday } from 'date-fns';
 import { useChatStore } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useImageViewerStore } from '../store/useImageViewerStore';
-import { Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock, DownloadCloud } from 'lucide-react';
+import { usePWAStore } from '../store/usePWAStore';
 import api from '../services/api';
 
 export const ChatList = ({ onOpenSettings }) => {
@@ -27,6 +28,7 @@ export const ChatList = ({ onOpenSettings }) => {
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
   const [isLockedView, setIsLockedView] = useState(false);
+  const { isInstallable, promptInstall } = usePWAStore();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const openImageViewer = useImageViewerStore((state) => state.openImageViewer);
@@ -229,6 +231,19 @@ export const ChatList = ({ onOpenSettings }) => {
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto pb-20 md:pb-2 divide-y divide-wa-dark-border/40 dark:divide-wa-dark-border/40 divide-wa-light-border/40">
+        
+        {/* PWA Mobile Banner */}
+        {isInstallable && (
+          <div 
+            onClick={promptInstall}
+            className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#d9fdd3] dark:bg-[#005c4b] cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <DownloadCloud className="w-5 h-5 text-[#111b21] dark:text-white" />
+              <span className="text-sm font-semibold text-[#111b21] dark:text-white">Install WhatsApp Mini</span>
+            </div>
+          </div>
+        )}
         
         {/* Locked Chats Banner */}
         {user?.lockedChats?.length > 0 && !isLockedView && !searchQuery && (
