@@ -20,6 +20,13 @@ export const StatusViewerModal = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [showViewers, setShowViewers] = useState(false);
   const [isMuted, setIsMuted] = useState(true); // Default true for autoplay policy
+  const videoRef = useRef(null);
+  
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
 
   const story = activeViewingGroup?.stories[activeStoryIndex];
   const isMyStory = activeViewingGroup?.user?._id === user?._id;
@@ -143,6 +150,7 @@ export const StatusViewerModal = () => {
           ) : story.mediaType === 'video' ? (
             <>
               <video
+              ref={videoRef}
               src={story.mediaUrl}
               autoPlay
               playsInline

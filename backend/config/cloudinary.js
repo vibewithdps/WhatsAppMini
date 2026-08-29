@@ -34,7 +34,8 @@ export const uploadMedia = async (file, folder = 'whatsapp_media') => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           folder,
-          resource_type: 'auto',
+          resource_type: file.mimetype.startsWith('video/') ? 'video' : 'auto',
+          ...(file.mimetype.startsWith('video/') && { format: 'mp4' })
         },
         (error, result) => {
           if (error) return reject(error);
