@@ -6,7 +6,6 @@ import { usePWAStore } from './store/usePWAStore';
 import api from './services/api';
 import { useSocket } from './hooks/useSocket';
 import { initSocket, getSocket } from './services/socket';
-import api from './services/api';
 
 import { SplashScreen } from './components/SplashScreen';
 import { Login } from './pages/Login';

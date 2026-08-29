@@ -256,12 +256,4 @@ export const useCallStore = create((set, get) => ({
       set(state => ({ callHistory: state.callHistory.filter(c => c._id !== callId) }));
     } catch(e) {}
   },
-    set({ isLoadingHistory: true });
-    try {
-      const res = await api.get('/calls');
-      set({ callHistory: res.data, isLoadingHistory: false });
-    } catch (e) {
-      set({ isLoadingHistory: false });
-    }
-  },
 }));
