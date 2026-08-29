@@ -184,7 +184,7 @@ const CallUI = () => {
             className={`p-4 rounded-full transition-all ${isScreenSharing ? 'bg-blue-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
             title="Share Screen"
           >
-            <MonitorUp size={24} />
+            <ScreenShare size={24} />
           </button>
         )}
 
