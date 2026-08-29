@@ -5,7 +5,8 @@ import { useAuthStore } from '../store/useAuthStore';
 export const OTPVerify = ({ identifier, initialOtp, onBack }) => {
   const { verifyOTP, sendOTP, isLoading, error } = useAuthStore();
   const [otp, setOtp] = useState(initialOtp || '');
-  const [name, setName] = useState('');
+  const [name, setName] = useState(window.existingName || '');
+  const hasName = window.hasName;
   const [resendMessage, setResendMessage] = useState('');
 
   const handleVerify = async (e) => {
@@ -108,7 +109,7 @@ export const OTPVerify = ({ identifier, initialOtp, onBack }) => {
 
             <button
               type="submit"
-              disabled={otp.length < 6 || !name.trim() || isLoading}
+              disabled={otp.length < 6 || (!hasName && !name.trim()) || isLoading}
               className="w-full py-3 rounded-xl bg-wa-green text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-wa-green-dark transition-colors shadow disabled:opacity-50"
             >
               <span>{isLoading ? 'Verifying...' : 'Verify & Continue'}</span>

@@ -124,7 +124,9 @@ export const requestOTP = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: 'OTP processed',
-    _dev_otp: otp // Added so the frontend can fallback if email doesn't arrive
+    _dev_otp: otp, // Added so the frontend can fallback if email doesn't arrive
+    hasName: user.name && user.name !== 'WhatsApp User',
+    existingName: user.name === 'WhatsApp User' ? '' : user.name
   });
 });
 

@@ -109,6 +109,10 @@ export const useCallStore = create((set, get) => ({
   },
 
   endActiveCall: async (emitSocket = true) => {
+    const useAuthStore = require('./useAuthStore').default;
+    const currentUser = useAuthStore.getState().user;
+    const isInitiator = get().caller?._id === currentUser?._id;
+
     set({ isMinimized: false });
     stopIncomingRingtone();
     const { localStream, caller, receiver, chatId, callType, callDuration, isGroupCall, groupPeers } = get();
@@ -141,10 +145,11 @@ export const useCallStore = create((set, get) => ({
           callType: callType || 'audio',
           duration: callDuration,
           status: callDuration > 0 ? 'completed' : 'missed',
+          saveLog: isInitiator,
         });
       }
 
-      if (peerId) {
+      if (peerId && isInitiator) {
         try {
           await api.post('/calls', {
             receiverId: peerId,
@@ -237,6 +242,20 @@ export const useCallStore = create((set, get) => ({
   },
 
   fetchCallHistory: async () => {
+    set({ isLoadingHistory: true });
+    try {
+      const res = await api.get('/calls');
+      set({ callHistory: res.data, isLoadingHistory: false });
+    } catch (err) {
+      set({ isLoadingHistory: false });
+    }
+  },
+  deleteCallLog: async (callId) => {
+    try {
+      await api.delete(`/calls/${callId}`);
+      set(state => ({ callHistory: state.callHistory.filter(c => c._id !== callId) }));
+    } catch(e) {}
+  },
     set({ isLoadingHistory: true });
     try {
       const res = await api.get('/calls');

@@ -38,6 +38,7 @@ const userSchema = new mongoose.Schema(
     otpExpiry: Date,
     savedContacts: { type: [String], default: [] },
     refreshToken: String,
+    favoriteChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat' }],
     pinnedChats: [
       {
         type: mongoose.Schema.Types.ObjectId,

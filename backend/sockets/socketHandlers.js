@@ -236,7 +236,7 @@ export const setupSocketHandlers = (io) => {
       }
     });
 
-    socket.on('end_call', async ({ to, chatId, callType, duration, status }) => {
+    socket.on('end_call', async ({ to, chatId, callType, duration, status, saveLog }) => {
       if (to) {
         socket.to(to).emit('call_ended', { from: currentUserId, chatId });
       }
@@ -244,8 +244,9 @@ export const setupSocketHandlers = (io) => {
         socket.to(chatId).emit('call_ended', { from: currentUserId, chatId });
 
         // Save Call in Chat Message History
-        try {
-          const callDurationNum = Number(duration) || 0;
+        if (saveLog) {
+          try {
+            const callDurationNum = Number(duration) || 0;
           const isCompleted = callDurationNum > 0 || status === 'completed';
           const callTitle = callType === 'video'
             ? (isCompleted ? 'Video call' : 'Missed video call')

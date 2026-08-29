@@ -110,26 +110,60 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
         {message.fileUrl && !isDeleted && (
           <div className="mb-2 rounded-lg overflow-hidden">
             {message.fileType === 'image' && (
-              <a
-                href={message.fileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="block"
-              >
-                <img
-                  src={message.fileUrl}
-                  alt={message.fileName || 'Photo'}
-                  className="max-h-72 w-full object-cover rounded-lg hover:opacity-95 transition-opacity"
-                />
-              </a>
+              <div className="relative group">
+                <a
+                  href={message.fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block"
+                >
+                  <img
+                    src={message.fileUrl}
+                    alt={message.fileName || 'Photo'}
+                    className="max-h-72 w-full object-cover rounded-lg hover:opacity-95 transition-opacity"
+                  />
+                </a>
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = message.fileUrl;
+                    link.download = message.fileName || `WhatsApp_Image_${Date.now()}.jpg`;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  title="Download"
+                  className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 md:opacity-0 opacity-100"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </div>
             )}
 
             {message.fileType === 'video' && (
-              <video
-                src={message.fileUrl}
-                controls
-                className="max-h-72 w-full rounded-lg bg-black"
-              />
+              <div className="relative group">
+                <video
+                  src={message.fileUrl}
+                  controls
+                  className="max-h-72 w-full rounded-lg bg-black"
+                />
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = message.fileUrl;
+                    link.download = message.fileName || `WhatsApp_Video_${Date.now()}.mp4`;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  title="Download"
+                  className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 md:opacity-0 opacity-100 z-10"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </div>
             )}
 
             {(message.fileType === 'audio' || message.fileType === 'voice') && (

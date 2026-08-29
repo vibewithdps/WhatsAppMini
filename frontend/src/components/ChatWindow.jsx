@@ -211,7 +211,10 @@ export const ChatWindow = ({ onBack }) => {
               )}
             </div>
 
-            <div onClick={() => activeChat.isGroupChat && setIsGroupInfoModalOpen(true)}>
+            <div onClick={() => {
+                if (activeChat.isGroupChat) setIsGroupInfoModalOpen(true);
+                else setShowContactInfo(true);
+              }} className="cursor-pointer">
               <h2 className="text-sm font-semibold text-wa-text-primary group-hover:text-wa-green transition-colors">
                 {chatName}
               </h2>

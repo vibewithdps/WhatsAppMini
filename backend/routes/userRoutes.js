@@ -8,6 +8,7 @@ import {
   toggleBlockUser,
   saveContact,
   updateAccountSettings,
+  toggleFavoriteChat,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
@@ -23,6 +24,7 @@ router.put('/account', upload.single('avatar'), updateAccountSettings);
 router.get('/:id', getUserById);
 router.put('/pin-chat/:chatId', togglePinChat);
 router.put('/archive-chat/:chatId', toggleArchiveChat);
+router.put('/favorite-chat/:chatId', toggleFavoriteChat);
 router.put('/block/:targetUserId', toggleBlockUser);
 
 export default router;

@@ -13,6 +13,7 @@ import {
   Plus
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
+import { Trash2 } from 'lucide-react';
 import { useCallStore } from '../store/useCallStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useWebRTC } from '../hooks/useWebRTC';

@@ -20,6 +20,7 @@ import { useImageViewerStore } from '../store/useImageViewerStore';
 
 export const ChatList = ({ onOpenSettings }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const openImageViewer = useImageViewerStore((state) => state.openImageViewer);
@@ -57,8 +58,35 @@ export const ChatList = ({ onOpenSettings }) => {
       );
       return latest.sender?._id !== user?._id && !isReadByMe;
     }
+    if (chatFilter === 'favorites') {
+      return user?.favoriteChats?.includes(chat._id);
+    }
     return true;
   });
+
+  const handleContextMenu = (e, chat) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, chat });
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!contextMenu) return;
+    try {
+      const api = (await import('../services/api.js')).default;
+      const res = await api.put(`/users/favorite-chat/${contextMenu.chat._id}`);
+      if (res.data.success) {
+        useAuthStore.setState({ user: { ...user, favoriteChats: res.data.favoriteChats } });
+      }
+    } catch(err) {}
+    setContextMenu(null);
+  };
+  
+  React.useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, []);
+
 
   const formatMessageTime = (dateString) => {
     if (!dateString) return '';
@@ -304,6 +332,20 @@ export const ChatList = ({ onOpenSettings }) => {
           </div>
         </button>
       </div>
+      
+      {contextMenu && (
+        <div 
+          className="fixed z-[100] bg-white dark:bg-wa-dark-panel shadow-xl rounded-lg py-2 border border-gray-200 dark:border-wa-dark-border min-w-[160px]"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <button 
+            onClick={handleToggleFavorite}
+            className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm text-gray-800 dark:text-gray-200"
+          >
+            {user?.favoriteChats?.includes(contextMenu.chat._id) ? 'Remove from Favorites' : 'Add to Favorites'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

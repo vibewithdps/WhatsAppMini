@@ -260,3 +260,18 @@ export const updateAccountSettings = async (req, res) => {
     res.status(500).json({ message: 'Server error while updating account' });
   }
 };
+
+export const toggleFavoriteChat = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  const { chatId } = req.params;
+
+  const isFav = user.favoriteChats.includes(chatId);
+  if (isFav) {
+    user.favoriteChats = user.favoriteChats.filter((id) => id.toString() !== chatId);
+  } else {
+    user.favoriteChats.push(chatId);
+  }
+  await user.save();
+
+  res.status(200).json({ success: true, favoriteChats: user.favoriteChats });
+});

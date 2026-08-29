@@ -120,6 +120,21 @@ export const ProfileImageViewerModal = () => {
 
           {/* Close Button */}
           <button
+            onClick={() => {
+              const link = document.createElement('a');
+              link.href = currentImage.imageUrl;
+              link.download = `WhatsApp_Mini_Image_${Date.now()}.jpg`;
+              link.target = '_blank';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
+            title="Download"
+            className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-colors ml-2"
+          >
+            <Download className="w-6 h-6" />
+          </button>
+          <button
             onClick={closeImageViewer}
             title="Close"
             className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-colors ml-2"

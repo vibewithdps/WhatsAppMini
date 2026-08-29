@@ -41,6 +41,8 @@ export const useAuthStore = create((set, get) => ({
       const res = await api.post('/auth/send-otp', payload);
       // Save email in local variable to use in verifyOTP
       window.lastUsedEmail = payload.email;
+      window.hasName = res.data.hasName;
+      window.existingName = res.data.existingName;
       set({ isLoading: false });
       
       if (res.data._dev_otp) {
