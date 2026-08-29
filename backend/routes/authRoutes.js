@@ -2,6 +2,7 @@ import express from 'express';
 import {
   requestOTP,
   verifyUserOTP,
+  firebaseLogin,
   demoLogin,
   refreshAccessToken,
   getMe,
@@ -16,6 +17,7 @@ const router = express.Router();
 
 router.post('/send-otp', requestOTP);
 router.post('/verify-otp', verifyUserOTP);
+router.post('/firebase-login', firebaseLogin);
 router.post('/demo-login', demoLogin);
 router.post('/refresh', refreshAccessToken);
 router.get('/me', protect, getMe);

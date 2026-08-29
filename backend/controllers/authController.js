@@ -1,5 +1,15 @@
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
+import nodemailer from 'nodemailer';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_EMAIL,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
+
 import { generateTokens, verifyRefreshToken } from '../utils/jwt.js';
 import { generateOTP, sendOTP } from '../utils/otp.js';
 import { uploadMedia } from '../config/cloudinary.js';
@@ -42,38 +52,79 @@ const DEMO_USERS = {
  * @access Public
  */
 export const requestOTP = asyncHandler(async (req, res) => {
-  const { phone, email } = req.body;
-
-  if (!phone && !email) {
-    res.status(400);
-    throw new Error('Please provide either phone number or email address');
+  let { phone, email } = req.body;
+  
+  // Support string payload if frontend sent it directly
+  if (typeof req.body === 'string') {
+    phone = req.body.replace(/"/g, ''); // strip quotes
+  } else if (req.body && !phone && Object.keys(req.body).length === 1 && Object.keys(req.body)[0].startsWith('+91')) {
+    phone = Object.keys(req.body)[0];
   }
 
-  const query = phone ? { phone: phone.trim() } : { email: email.trim().toLowerCase() };
-  let user = await User.findOne(query);
+  if (!phone) {
+    res.status(400);
+    throw new Error('Please provide a phone number');
+  }
 
-  const { otp, expiry } = generateOTP();
+  // Find user to fallback email if missing (for resend OTP)
+  let user = await User.findOne({ phone });
+  
+  if (!email && user && user.email) {
+    email = user.email;
+  }
 
+  if (!email) {
+    res.status(400);
+    throw new Error('Please provide both phone number and email');
+  }
+
+
+  // Find or create user
+  user = await User.findOne({ phone });
   if (!user) {
     user = await User.create({
-      ...query,
-      name: phone ? `User ${phone.trim().slice(-4)}` : email.trim().split('@')[0],
-      otp,
-      otpExpiry: expiry,
+      phone,
+      email,
+      name: 'WhatsApp User',
+      avatar: '',
+      about: 'Hey there! I am using WhatsApp Mini.'
     });
   } else {
-    user.otp = otp;
-    user.otpExpiry = expiry;
-    await user.save();
+    // update email
+    user.email = email;
   }
 
-  await sendOTP(phone ? phone.trim() : email.trim(), otp, Boolean(email));
+  const { otp, expiry } = generateOTP();
+  
+  user.otp = otp;
+  user.otpExpiry = expiry;
+  await user.save();
+
+  // Send Email
+  try {
+      if (process.env.GMAIL_EMAIL && process.env.GMAIL_APP_PASSWORD) {
+          const mailOptions = {
+            from: `WhatsApp Mini <${process.env.GMAIL_EMAIL}>`,
+            to: email,
+            subject: `WhatsApp Mini OTP: ${otp} [${new Date().toLocaleTimeString()}]`,
+            text: `Your OTP for WhatsApp Mini is: ${otp}. Please do not share this with anyone.`
+          };
+          await transporter.sendMail(mailOptions);
+          console.log(`OTP sent to email ${email}: ${otp}`);
+      } else {
+          console.log(`=======================================================`);
+          console.log(`[DEV MODE] OTP for ${email} / ${phone} is: ${otp}`);
+          console.log(`=======================================================`);
+      }
+  } catch (error) {
+      console.error("Error sending email:", error);
+      res.status(500);
+      throw new Error('Failed to send OTP email');
+  }
 
   res.status(200).json({
     success: true,
-    message: `OTP sent successfully to ${phone || email}`,
-    // In dev / demo mode, return OTP directly for effortless testing
-    debugOtp: otp,
+    message: 'OTP sent successfully',
   });
 });
 
@@ -85,44 +136,36 @@ export const requestOTP = asyncHandler(async (req, res) => {
 export const verifyUserOTP = asyncHandler(async (req, res) => {
   const { phone, email, otp, name, avatar } = req.body;
 
-  if ((!phone && !email) || !otp) {
+  if (!phone || !email || !otp) {
     res.status(400);
-    throw new Error('Please provide identifier (phone/email) and OTP');
+    throw new Error('Please provide phone, email and OTP');
   }
 
-  const query = phone ? { phone: phone.trim() } : { email: email.trim().toLowerCase() };
-  const user = await User.findOne(query).select('+otp +otpExpiry');
-
+  const user = await User.findOne({ phone }).select('+otp +otpExpiry');
   if (!user) {
-    res.status(404);
-    throw new Error('User not found. Please request a new OTP');
+    res.status(401);
+    throw new Error('User not found');
   }
 
-  if (user.otp !== otp) {
-    res.status(400);
-    throw new Error('Invalid OTP code. Please check and try again');
-  }
-
-  if (user.otpExpiry && new Date() > user.otpExpiry) {
-    res.status(400);
-    throw new Error('OTP has expired. Please request a new one');
+  console.log("Checking OTP. DB user.otp=", user.otp, " DB expiry=", user.otpExpiry, " user input otp=", otp, " now=", new Date());
+  if (user.otp !== String(otp) || user.otpExpiry < new Date()) {
+    res.status(401);
+    throw new Error('Invalid or expired OTP');
   }
 
   // Clear OTP
-  user.otp = undefined;
-  user.otpExpiry = undefined;
-  user.isOnline = true;
-  user.lastSeen = new Date();
-
-  if (name) user.name = name;
-  if (avatar) user.avatar = avatar;
-
-  await user.save();
+  user.otp = null;
+  user.otpExpiry = null;
 
   const { accessToken, refreshToken } = generateTokens(user._id);
 
+  user.refreshToken = refreshToken;
+  await user.save();
+
   res.status(200).json({
     success: true,
+    accessToken,
+    refreshToken,
     user: {
       _id: user._id,
       name: user.name,
@@ -130,12 +173,7 @@ export const verifyUserOTP = asyncHandler(async (req, res) => {
       email: user.email,
       avatar: user.avatar,
       about: user.about,
-      isOnline: user.isOnline,
-      lastSeen: user.lastSeen,
-      publicKey: user.publicKey,
     },
-    accessToken,
-    refreshToken,
   });
 });
 
@@ -337,4 +375,67 @@ export const logoutUser = asyncHandler(async (req, res) => {
     success: true,
     message: 'Logged out successfully',
   });
+});
+
+/**
+ * @desc   Verify Firebase Token and Authenticate User
+ * @route  POST /api/auth/firebase-login
+ * @access Public
+ */
+export const firebaseLogin = asyncHandler(async (req, res) => {
+  const { idToken, name, avatar } = req.body;
+
+  if (!idToken) {
+    res.status(400);
+    throw new Error('Please provide Firebase idToken');
+  }
+
+  // Verify the Firebase Token
+  // Wait, I need to import admin from config/firebase.js
+  // I will just use dynamic import for this hacky append
+  const admin = (await import('../config/firebase.js')).default;
+  if (!admin.apps.length) {
+      res.status(500);
+      throw new Error('Firebase Admin SDK is not initialized. Please add serviceAccountKey.json');
+  }
+
+  try {
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      const phone = decodedToken.phone_number; // Firebase standard
+
+      if (!phone) {
+          res.status(400);
+          throw new Error('Firebase token does not contain a phone number');
+      }
+
+      let user = await User.findOne({ phone: phone });
+
+      if (!user) {
+          // New user
+          user = await User.create({
+              phone: phone,
+              name: name || 'WhatsApp User',
+              avatar: avatar || '',
+              about: 'Hey there! I am using WhatsApp Mini.'
+          });
+      }
+
+      // Generate JWT (your existing system)
+      const token = generateToken(user._id);
+
+      res.status(200).json({
+          success: true,
+          token,
+          user: {
+              _id: user._id,
+              name: user.name,
+              phone: user.phone,
+              avatar: user.avatar,
+              about: user.about,
+          }
+      });
+  } catch (error) {
+      res.status(401);
+      throw new Error('Invalid Firebase Token: ' + error.message);
+  }
 });

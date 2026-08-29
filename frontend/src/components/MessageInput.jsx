@@ -61,6 +61,11 @@ export const MessageInput = () => {
 
   // Socket typing indicator
   const handleTextChange = (e) => {
+    // Auto resize textarea
+    if (e.target.tagName === 'TEXTAREA') {
+      e.target.style.height = 'auto';
+      e.target.style.height = (e.target.scrollHeight < 120 ? e.target.scrollHeight : 120) + 'px';
+    }
     setText(e.target.value);
     const socket = getSocket();
     if (socket && activeChat && user) {
@@ -193,7 +198,7 @@ export const MessageInput = () => {
   };
 
   return (
-    <div className="w-full bg-wa-dark-header dark:bg-wa-dark-header bg-wa-light-header border-t border-wa-dark-border dark:border-wa-dark-border border-wa-light-border relative z-30 shadow-2xl px-2 sm:px-4 py-2 sm:py-2.5">
+    <div className="w-full bg-wa-light-header dark:bg-wa-dark-header border-t border-wa-light-border dark:border-wa-dark-border relative z-30 shadow-2xl px-2 sm:px-4 py-2 sm:py-2.5">
       {/* Emoji & Stickers Popup Menu */}
       {showPicker && (
         <div className="absolute bottom-full mb-2 left-2 sm:left-4 z-50 shadow-2xl bg-wa-dark-panel dark:bg-wa-dark-panel bg-white rounded-3xl border border-wa-dark-border overflow-hidden max-w-[calc(100vw-16px)] sm:max-w-sm animate-fade-in">
@@ -452,10 +457,21 @@ export const MessageInput = () => {
 
           {/* Main Message Text Input Box */}
           <div className="flex-1 min-w-0">
-            <input
-              type="text"
+            <textarea
               value={text}
               onChange={handleTextChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const enterSends = user?.enterIsSend === true;
+                  if (enterSends && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(e);
+                  } else if (!enterSends && !e.shiftKey) {
+                    // let it add a new line
+                  }
+                }
+              }}
+              rows={1}
               placeholder={
                 isSharingLocation
                   ? '📍 Getting GPS Location...'
@@ -463,7 +479,7 @@ export const MessageInput = () => {
                   ? '🔒 Encrypted message...'
                   : 'Message'
               }
-              className="w-full px-4 py-2.5 sm:py-3 rounded-full bg-gray-100 dark:bg-wa-dark-input text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-wa-text-secondary text-sm focus:outline-none focus:ring-2 focus:ring-wa-green shadow-inner"
+              className="w-full px-4 py-2.5 sm:py-3 rounded-[20px] bg-gray-100 dark:bg-wa-dark-input text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-wa-text-secondary text-sm focus:outline-none focus:ring-2 focus:ring-wa-green shadow-inner resize-none min-h-[44px] max-h-[120px] overflow-y-auto"
             />
           </div>
 

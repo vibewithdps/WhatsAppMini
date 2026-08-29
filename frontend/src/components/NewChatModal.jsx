@@ -50,7 +50,7 @@ export const NewChatModal = () => {
   };
 
   const handlePickContact = async () => {
-    const supported = ('contacts' in navigator && 'ContactsManager' in window);
+    const supported = ('contacts' in navigator);
     if (!supported) {
       alert("Your browser/device (like iPhone) does not support picking contacts directly from the web.");
       return;
@@ -59,9 +59,24 @@ export const NewChatModal = () => {
       const contacts = await navigator.contacts.select(['name', 'tel'], { multiple: false });
       if (contacts && contacts.length > 0 && contacts[0].tel && contacts[0].tel.length > 0) {
         let pickedNumber = contacts[0].tel[0];
-        // Clean number to match format (keep digits and +)
         pickedNumber = pickedNumber.replace(/[^\d+]/g, '');
+        if (pickedNumber.startsWith('+91') && pickedNumber.length === 13 && !pickedNumber.includes(' ')) {
+          pickedNumber = '+91 ' + pickedNumber.substring(3);
+        } else if (/^\d{10}$/.test(pickedNumber)) {
+          pickedNumber = '+91 ' + pickedNumber;
+        }
         setNewContact(pickedNumber);
+        
+        // Auto-save the contact
+        try {
+          await api.post('/users/contacts', { identifier: pickedNumber });
+          setNewContact('');
+          alert('Contact ' + contacts[0].name + ' saved! If they are registered on WhatsApp Mini, they will appear in your list.');
+          const res = await api.get('/users');
+          setUsers(res.data.users || []);
+        } catch (err) {
+          alert('Failed to save contact');
+        }
       }
     } catch (ex) {
       console.error("Error picking contact:", ex);
@@ -92,7 +107,7 @@ export const NewChatModal = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search mutual contacts..."
+              placeholder="Search saved contacts..."
               className="w-full pl-10 pr-4 py-2 text-sm rounded-xl bg-gray-100 dark:bg-wa-dark-input text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-wa-text-secondary focus:outline-none focus:ring-1 focus:ring-wa-green border border-gray-200 dark:border-wa-dark-border"
               autoFocus
             />
@@ -102,10 +117,16 @@ export const NewChatModal = () => {
             onSubmit={async (e) => {
               e.preventDefault();
               if (!newContact.trim()) return;
+              let identifier = newContact.trim();
+              if (/^\d{10}$/.test(identifier)) {
+                identifier = '+91 ' + identifier;
+              } else if (/^\d{12}$/.test(identifier) && identifier.startsWith('91')) {
+                identifier = '+' + identifier.slice(0,2) + ' ' + identifier.slice(2);
+              }
               try {
-                await api.post('/users/contacts', { identifier: newContact.trim() });
+                await api.post('/users/contacts', { identifier });
                 setNewContact('');
-                alert('Contact saved! They will appear here once they also save your number.');
+                alert('Contact saved! If they are registered, they will appear in your list.');
                 // Refresh list
                 const res = await api.get('/users');
                 setUsers(res.data.users || []);
@@ -130,12 +151,19 @@ export const NewChatModal = () => {
               Add
             </button>
           </form>
-          {('contacts' in navigator && 'ContactsManager' in window) && (
+          {('contacts' in navigator) ? (
             <button
               onClick={handlePickContact}
               className="w-full mt-2 py-2 text-xs font-semibold text-cyan-500 hover:text-cyan-400 border border-cyan-500/30 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors"
             >
               + Pick from Phone Contacts (Android)
+            </button>
+          ) : (
+            <button
+              onClick={() => alert("Ye feature sirf Android Chrome par kaam karta hai kyunki Apple aur dusre browsers contacts padhne ki permission nahi dete. Kripya number type karke Add karein.")}
+              className="w-full mt-2 py-2 text-xs font-semibold text-gray-500 border border-gray-500/30 rounded-lg bg-gray-500/10 cursor-not-allowed"
+            >
+              + Phone Contacts (Blocked by Browser)
             </button>
           )}
         </div>
@@ -144,12 +172,12 @@ export const NewChatModal = () => {
         <div className="flex-1 overflow-y-auto divide-y divide-wa-dark-border/40">
           {isLoading ? (
             <div className="p-8 text-center text-xs text-wa-text-secondary">
-              Loading mutual contacts...
+              Loading saved contacts...
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="p-8 text-center text-xs text-wa-text-secondary">
-              No mutual contacts found.<br/><br/>
-              Both you and the other person must save each other's phone number or email to chat.
+              No saved contacts found.<br/><br/>
+              They will appear here once you save their registered phone number.
             </div>
           ) : (
             filteredUsers.map((u) => (

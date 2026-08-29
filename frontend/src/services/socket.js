@@ -9,7 +9,8 @@ const getSocketUrl = () => {
   if (import.meta.env.PROD) {
     return DEFAULT_BACKEND_URL;
   }
-  return `http://${window.location.hostname || 'localhost'}:5000`;
+  // Vite proxy will handle this on the same port
+  return `/`;
 };
 
 let socket = null;

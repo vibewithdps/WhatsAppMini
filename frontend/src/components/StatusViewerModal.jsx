@@ -19,6 +19,7 @@ export const StatusViewerModal = () => {
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [showViewers, setShowViewers] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   const story = activeViewingGroup?.stories[activeStoryIndex];
   const isMyStory = activeViewingGroup?.user?._id === user?._id;
@@ -140,12 +141,21 @@ export const StatusViewerModal = () => {
               {story.text}
             </p>
           ) : story.mediaType === 'video' ? (
-            <video
+            <>
+              <video
               src={story.mediaUrl}
               autoPlay
               playsInline
-              className="max-h-full max-w-full object-contain rounded-2xl"
+              muted={isMuted}
+              className="max-h-full max-w-full object-contain rounded-2xl shadow-lg"
             />
+            <button 
+              onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+              className="absolute top-4 right-4 z-50 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-md transition-colors"
+            >
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
+            </>
           ) : (
             <img
               src={story.mediaUrl}

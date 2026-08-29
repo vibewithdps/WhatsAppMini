@@ -357,7 +357,7 @@ export const ChatWindow = ({ onBack }) => {
       />
 
       {/* Message Input Bar Pinned at bottom */}
-      <div className="flex-shrink-0 w-full z-40 pb-safe">
+      <div className="flex-none w-full z-40">
         <MessageInput />
       </div>
 

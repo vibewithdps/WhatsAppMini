@@ -25,8 +25,8 @@ export const OTPVerify = ({ identifier, initialOtp, onBack }) => {
 
   const handleResend = async () => {
     try {
-      const data = await sendOTP(identifier);
-      if (data.debugOtp) setOtp(data.debugOtp);
+      const data = await sendOTP({ phone: identifier, email: window.lastUsedEmail });
+
       setResendMessage('A new verification code has been sent!');
       setTimeout(() => setResendMessage(''), 4000);
     } catch (e) {

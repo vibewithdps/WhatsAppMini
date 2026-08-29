@@ -1,7 +1,44 @@
-import { useEffect } from 'react';
+import { stopIncomingRingtone } from '../services/audio';
+import { useEffect, useRef } from 'react';
 import { getSocket } from '../services/socket';
 import { useCallStore } from '../store/useCallStore';
 import { useAuthStore } from '../store/useAuthStore';
+
+// Free Metered.ca TURN server + Google STUN
+// Read TURN server details from Environment Variables for Production
+// If not found, it automatically falls back to the public open relay for local testing.
+const TURN_URL = import.meta.env.VITE_TURN_URL || 'turn:openrelay.metered.ca:80';
+const TURN_USERNAME = import.meta.env.VITE_TURN_USERNAME || 'openrelayproject';
+const TURN_CREDENTIAL = import.meta.env.VITE_TURN_CREDENTIAL || 'openrelayproject';
+
+// To support port 443 and TCP fallbacks automatically from the base URL provided:
+const baseTurnUrl = TURN_URL.split('?')[0].replace(':80', '').replace(':443', '');
+const domainOnly = baseTurnUrl ? baseTurnUrl.replace('//', '').replace('turn:', '') : 'openrelay.metered.ca';
+
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    {
+      urls: `turn:${domainOnly}:80`,
+      username: TURN_USERNAME,
+      credential: TURN_CREDENTIAL,
+    },
+    {
+      urls: `turn:${domainOnly}:443`,
+      username: TURN_USERNAME,
+      credential: TURN_CREDENTIAL,
+    },
+    {
+      urls: `turn:${domainOnly}:443?transport=tcp`,
+      username: TURN_USERNAME,
+      credential: TURN_CREDENTIAL,
+    }
+  ]
+};
+
+let peerConnection = null;
+      window.peerConnection = null;
 
 export const useWebRTC = () => {
   const user = useAuthStore((state) => state.user);
@@ -10,123 +47,227 @@ export const useWebRTC = () => {
     setCallType,
     setLocalStream,
     setRemoteStream,
-    setCallDuration,
     incomingCallData,
     endActiveCall,
-    handleIncomingCall,
-    handleIncomingGroupCall,
+    callType,
   } = useCallStore();
 
+
+
+  const cleanupPeer = () => {
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+  };
+
+  const getMediaStream = async (type) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: type === 'video',
+        audio: true
+      });
+      setLocalStream(stream);
+      return stream;
+    } catch (err) {
+      console.error('Failed to get local stream', err);
+      alert('Could not access camera/microphone. Please grant permissions.');
+      endActiveCall();
+      return null;
+    }
+  };
+
+  const createPeer = (stream, socket, targetId, isInitiator) => {
+    const pc = new RTCPeerConnection(ICE_SERVERS);
+    peerConnection = pc;
+    window.peerConnection = pc;
+
+    if (stream) {
+      stream.getTracks().forEach((track) => {
+        pc.addTrack(track, stream);
+      });
+    }
+
+    pc.ontrack = (event) => {
+      console.log('Received remote track', event.streams[0]);
+      setRemoteStream(event.streams[0]);
+    };
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('webrtc_ice_candidate', {
+          target: targetId,
+          candidate: event.candidate,
+        });
+      }
+    };
+
+    
+
+    
+    pc.oniceconnectionstatechange = () => {
+      console.log('ICE Connection State:', pc.iceConnectionState);
+      if (pc.iceConnectionState === 'failed') {
+        alert("Network connection failed.");
+        endActiveCall();
+      }
+    };
+
+    return pc;
+  };
+
+
+  const processIceQueue = async () => {
+    if (window.iceCandidateQueue && window.peerConnection) {
+      for (const candidate of window.iceCandidateQueue) {
+        try {
+          await window.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error('Error adding queued ICE candidate', e);
+        }
+      }
+      window.iceCandidateQueue = [];
+    }
+  };
+
+  // Caller initiates call
   const startCall = async ({ receiverUser, callType, chatId }) => {
-    try {
-      const socket = getSocket();
-      if (!socket) throw new Error('Socket not connected');
+    const socket = getSocket();
+    if (!socket) return;
 
-      useCallStore.setState({
-        callStatus: 'calling',
-        callType,
-        receiver: receiverUser,
-        chatId,
-        isGroupCall: false,
-      });
+    useCallStore.setState({
+      callStatus: 'calling',
+      callType,
+      caller: user,
+      receiver: receiverUser,
+      chatId,
+      isGroupCall: false,
+    });
 
-      // The Agora channel name will be the chatId
-      socket.emit('call_user', {
-        userToCall: receiverUser._id,
-        from: user._id,
-        callerName: user.name,
-        callerAvatar: user.avatar,
-        callType,
-        chatId,
-      });
+    const stream = await getMediaStream(callType);
+    if (!stream) return;
 
-      const handleCallAccepted = () => {
-        console.log('📡 Call Accepted by receiver (Agora)');
-        setCallStatus('connected');
-        socket.off('call_accepted', handleCallAccepted);
-      };
+    const pc = createPeer(stream, socket, receiverUser._id, true);
 
-      socket.off('call_accepted');
-      socket.on('call_accepted', handleCallAccepted);
-    } catch (error) {
-      console.error('Error starting Agora call:', error);
-      endActiveCall();
-    }
-  };
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    processIceQueue();
 
-  const answerCall = async () => {
-    try {
-      const socket = getSocket();
-      if (!socket || !incomingCallData) throw new Error('Cannot answer call');
-
-      setCallStatus('connecting'); // Transition to connecting (Agora joining)
-      
-      socket.emit('answer_call', {
-        to: incomingCallData.from,
-        from: user._id,
-      });
-
+    socket.emit('call_user', {
+      userToCall: receiverUser._id,
+      from: user._id,
+      callerName: user.name,
+      callerAvatar: user.avatar,
+      callType,
+      chatId,
+      signalData: offer, // Send offer as signalData to match backend expectation
+    });
+    
+    // Listen for answer
+    socket.off('call_accepted');
+    socket.on('call_accepted', async ({ signal }) => {
       setCallStatus('connected');
-    } catch (error) {
-      console.error('Error answering call:', error);
-      endActiveCall();
-    }
+      if (peerConnection) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(signal));
+        processIceQueue();
+      }
+    });
   };
 
-  const startGroupCall = async ({ groupChat, callType }) => {
-    try {
-      const socket = getSocket();
-      if (!socket) throw new Error('Socket not connected');
+  // Receiver answers call
+  const answerCall = async () => {
+    const socket = getSocket();
+    if (!socket || !incomingCallData) return;
 
-      useCallStore.setState({
-        callStatus: 'calling',
-        callType,
-        chatId: groupChat._id,
-        isGroupCall: true,
-        groupInfo: {
-          chatId: groupChat._id,
-          groupName: groupChat.chatName,
-          groupAvatar: groupChat.groupAdmin?.avatar,
-        },
-      });
+    stopIncomingRingtone();
+    setCallStatus('connecting');
+    const stream = await getMediaStream(incomingCallData.callType);
+    if (!stream) return;
 
-      socket.emit('initiate_group_call', {
-        chatId: groupChat._id,
-        groupName: groupChat.chatName,
-        groupAvatar: groupChat.groupAdmin?.avatar,
-        callType,
-      });
-
-    } catch (error) {
-      console.error('Error starting group call:', error);
-      endActiveCall();
+    const pc = createPeer(stream, socket, incomingCallData.from, false);
+    
+    // Set remote description from incoming offer
+    if (incomingCallData.signal) {
+      await pc.setRemoteDescription(new RTCSessionDescription(incomingCallData.signal));
+      processIceQueue();
     }
+
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    socket.emit('answer_call', {
+      to: incomingCallData.from,
+      from: user._id,
+      signal: answer, // Send answer
+    });
+
+    setCallStatus('connected');
+  };
+
+
+
+  const startGroupCall = async () => {
+    alert("Group calls currently disabled in free WebRTC mode.");
+    endActiveCall();
   };
 
   const answerGroupCall = async () => {
-    try {
-      const socket = getSocket();
-      if (!socket || !incomingCallData) return;
-      
-      setCallStatus('connected');
-      socket.emit('join_group_call', {
-        chatId: incomingCallData.chatId,
-      });
+    endActiveCall();
+  };
 
-    } catch (error) {
-      console.error('Error answering group call:', error);
-      endActiveCall();
+  const flipCamera = async () => {
+    if (!peerConnection) return;
+    try {
+      const currentStream = useCallStore.getState().localStream;
+      if (!currentStream) return;
+      
+      const videoTrack = currentStream.getVideoTracks()[0];
+      if (!videoTrack) return;
+      
+      // Some browsers don't return facingMode, so we toggle a global variable
+      if (!window.currentFacingMode) window.currentFacingMode = 'user';
+      const newFacingMode = window.currentFacingMode === 'user' ? 'environment' : 'user';
+      window.currentFacingMode = newFacingMode;
+      
+      let newStream;
+      try {
+        // Try strict exact facingMode first
+        newStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: newFacingMode } },
+          audio: false
+        });
+      } catch (err) {
+        // Fallback to loose preference if exact fails (e.g. desktop)
+        newStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: newFacingMode },
+          audio: false
+        });
+      }
+      
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      
+      // Replace track in peer connection
+      const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+      if (sender) {
+        await sender.replaceTrack(newVideoTrack);
+      }
+      
+      // Update local stream
+      videoTrack.stop();
+      currentStream.removeTrack(videoTrack);
+      currentStream.addTrack(newVideoTrack);
+      
+      // Clone the stream so React/Zustand detects the reference change
+      const clonedStream = new MediaStream(currentStream.getTracks());
+      useCallStore.setState({ localStream: clonedStream });
+      
+    } catch (e) {
+      console.error("Flip camera failed:", e);
     }
   };
 
   const toggleScreenShare = async () => {
-    console.log("Screen share is handled by Agora SDK natively now.");
-  };
-
-  const cleanupPeer = () => {
-    // Agora handles cleanup in its own unmount hooks
-    setLocalStream(null);
-    setRemoteStream(null);
+    alert("Screen sharing not yet supported in free mode.");
   };
 
   return {
@@ -135,6 +276,7 @@ export const useWebRTC = () => {
     answerCall,
     answerGroupCall,
     toggleScreenShare,
+    flipCamera,
     cleanupPeer,
   };
 };

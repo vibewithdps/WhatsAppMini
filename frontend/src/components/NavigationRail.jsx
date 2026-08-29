@@ -7,9 +7,11 @@ import {
   Sun,
   Moon,
   LogOut,
+  Users,
   Download,
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useChatStore } from '../store/useChatStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { useStatusStore } from '../store/useStatusStore';
 import { usePWAStore } from '../store/usePWAStore';
@@ -21,12 +23,20 @@ export const NavigationRail = ({
   onOpenSettings,
 }) => {
   const user = useAuthStore((state) => state.user);
+
   const logout = useAuthStore((state) => state.logout);
   const { theme, toggleTheme } = useThemeStore();
   const recentUpdates = useStatusStore((state) => state.recentUpdates);
-  const { installApp } = usePWAStore();
+  const chats = useChatStore((state) => state.chats);
+  const { installApp, isInstallable } = usePWAStore();
 
   const hasUnseenStatus = recentUpdates.length > 0;
+  
+  const unreadCount = chats.filter(c => {
+    // If the last message is from someone else and unreadCount > 0
+    return c.unreadCount > 0;
+  }).length;
+
 
   return (
     <>
@@ -130,7 +140,20 @@ export const NavigationRail = ({
             )}
           </button>
 
+
+          {/* Install App */}
+          {isInstallable && (
+            <button
+              onClick={installApp}
+              title="Install App"
+              className="p-2.5 rounded-xl text-wa-green hover:text-wa-green-dark hover:bg-wa-green/10 transition-colors animate-pulse"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+          )}
+
           {/* Settings Modal */}
+
           <button
             onClick={onOpenSettings}
             title="Settings"
@@ -151,70 +174,52 @@ export const NavigationRail = ({
       </aside>
 
       {/* Mobile Bottom Navigation Bar (Visible on Mobile Phones & Tablets < lg) */}
-      <nav className="flex lg:hidden fixed bottom-0 inset-x-0 h-16 bg-wa-dark-header dark:bg-wa-dark-header bg-wa-light-header border-t border-wa-dark-border dark:border-wa-dark-border border-wa-light-border items-center justify-around px-2 z-30 select-none shadow-2xl">
+      <nav className="flex lg:hidden fixed bottom-0 inset-x-0 h-[68px] bg-white dark:bg-wa-dark-panel border-t border-gray-100 dark:border-wa-dark-border items-center justify-around px-1 z-30 select-none pb-safe">
+        
+        {/* Chats */}
         <button
           onClick={() => setActiveTab('chats')}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all ${
-            activeTab === 'chats' ? 'text-wa-green font-bold bg-wa-green/10' : 'text-wa-text-secondary'
-          }`}
+          className="flex flex-col items-center justify-center w-full h-full gap-1 pt-2 pb-1"
         >
-          <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
-          <span className="text-[11px] sm:text-xs">Chats</span>
+          <div className={`flex items-center justify-center w-16 h-8 rounded-full transition-colors relative ${activeTab === 'chats' ? 'bg-[#d9fdd3] dark:bg-[#005c4b]' : 'bg-transparent'}`}>
+            <MessageSquare className={`w-6 h-6 ${activeTab === 'chats' ? 'text-[#111b21] dark:text-white' : 'text-[#54656f] dark:text-gray-400'}`} fill={activeTab === 'chats' ? 'currentColor' : 'none'} />
+            {/* Badge example */}
+            {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#25d366] rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-white dark:border-wa-dark-panel px-1">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+            )}
+          </div>
+          <span className={`text-[11px] ${activeTab === 'chats' ? 'text-[#111b21] dark:text-white font-bold' : 'text-[#54656f] dark:text-gray-400 font-medium'}`}>Chats</span>
         </button>
 
+        {/* Updates */}
         <button
           onClick={() => setActiveTab('status')}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all relative ${
-            activeTab === 'status' ? 'text-wa-green font-bold bg-wa-green/10' : 'text-wa-text-secondary'
-          }`}
+          className="flex flex-col items-center justify-center w-full h-full gap-1 pt-2 pb-1"
         >
-          <CircleDot className="w-5 h-5 sm:w-6 sm:h-6" />
-          {hasUnseenStatus && (
-            <span className="absolute top-1 right-3 w-2.5 h-2.5 bg-wa-green rounded-full ring-2 ring-wa-dark-header" />
-          )}
-          <span className="text-[11px] sm:text-xs">Status</span>
+          <div className={`flex items-center justify-center w-16 h-8 rounded-full transition-colors relative ${activeTab === 'status' ? 'bg-[#d9fdd3] dark:bg-[#005c4b]' : 'bg-transparent'}`}>
+            <CircleDot className={`w-6 h-6 ${activeTab === 'status' ? 'text-[#111b21] dark:text-white' : 'text-[#54656f] dark:text-gray-400'}`} fill={activeTab === 'status' ? 'currentColor' : 'none'} />
+            {hasUnseenStatus && (
+              <span className="absolute top-2 right-4 w-2 h-2 bg-[#25d366] rounded-full border border-white dark:border-wa-dark-panel" />
+            )}
+          </div>
+          <span className={`text-[11px] ${activeTab === 'status' ? 'text-[#111b21] dark:text-white font-bold' : 'text-[#54656f] dark:text-gray-400 font-medium'}`}>Updates</span>
         </button>
 
+        
+
+        {/* Calls */}
         <button
           onClick={() => setActiveTab('calls')}
-          className={`flex flex-col items-center gap-1 py-1 px-3 rounded-2xl transition-all ${
-            activeTab === 'calls' ? 'text-wa-green font-bold bg-wa-green/10' : 'text-wa-text-secondary'
-          }`}
+          className="flex flex-col items-center justify-center w-full h-full gap-1 pt-2 pb-1"
         >
-          <Phone className="w-5 h-5 sm:w-6 sm:h-6" />
-          <span className="text-[11px] sm:text-xs">Calls</span>
+          <div className={`flex items-center justify-center w-16 h-8 rounded-full transition-colors ${activeTab === 'calls' ? 'bg-[#d9fdd3] dark:bg-[#005c4b]' : 'bg-transparent'}`}>
+            <Phone className={`w-6 h-6 ${activeTab === 'calls' ? 'text-[#111b21] dark:text-white' : 'text-[#54656f] dark:text-gray-400'}`} fill={activeTab === 'calls' ? 'currentColor' : 'none'} />
+          </div>
+          <span className={`text-[11px] ${activeTab === 'calls' ? 'text-[#111b21] dark:text-white font-bold' : 'text-[#54656f] dark:text-gray-400 font-medium'}`}>Calls</span>
         </button>
 
-        <button
-          onClick={installApp}
-          className="flex flex-col items-center gap-1 py-1 px-3 rounded-2xl text-cyan-400 font-bold hover:bg-cyan-500/10 transition-all"
-        >
-          <Download className="w-5 h-5 sm:w-6 sm:h-6 animate-bounce" />
-          <span className="text-[11px] sm:text-xs">Install APK</span>
-        </button>
-
-        <button
-          onClick={onOpenSettings}
-          className="flex flex-col items-center gap-1 py-1 px-3 rounded-2xl text-wa-text-secondary"
-        >
-          <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
-          <span className="text-[11px] sm:text-xs">Settings</span>
-        </button>
-
-        <button
-          onClick={onOpenProfile}
-          className="flex flex-col items-center gap-1 py-1 px-3 rounded-2xl"
-        >
-          <img
-            src={
-              user?.avatar ||
-              '/default-avatar.svg'
-            }
-            alt={user?.name}
-            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover ring-2 ring-wa-green"
-          />
-          <span className="text-[11px] sm:text-xs text-wa-text-secondary font-medium">Profile</span>
-        </button>
       </nav>
     </>
   );

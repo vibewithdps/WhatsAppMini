@@ -20,7 +20,6 @@ import chatRoutes from './routes/chatRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import callRoutes from './routes/callRoutes.js';
 import statusRoutes from './routes/statusRoutes.js';
-import agoraRoutes from './routes/agoraRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -104,7 +103,6 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/status', statusRoutes);
-app.use('/api/agora', agoraRoutes);
 
 // Error Handlers
 app.use(notFound);

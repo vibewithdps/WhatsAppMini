@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { MessageSquare } from 'lucide-react';
 import {
   Search,
   Plus,
@@ -17,8 +18,10 @@ import { useChatStore } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useImageViewerStore } from '../store/useImageViewerStore';
 
-export const ChatList = () => {
+export const ChatList = ({ onOpenSettings }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const openImageViewer = useImageViewerStore((state) => state.openImageViewer);
   const {
     chats,
@@ -88,15 +91,32 @@ export const ChatList = () => {
       {/* Header */}
       <div className="p-3 sm:p-4 flex items-center justify-between bg-white dark:bg-wa-dark-panel">
         <h1 className="text-xl font-bold text-[#25d366] tracking-tight">
-          WhatsApp
+          WhatsApp Mini
         </h1>
         <div className="flex items-center gap-3">
-          <button
-            title="Menu"
-            className="text-[#54656f] dark:text-gray-300 hover:text-gray-700 transition-colors"
-          >
-            <MoreVertical className="w-5 h-5" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 text-[#54656f] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            >
+              <MoreVertical className="w-6 h-6" />
+            </button>
+            
+            {/* Dropdown Menu */}
+            {isMenuOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setIsMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-12 w-48 bg-white dark:bg-wa-dark-panel rounded-xl shadow-xl py-2 z-50 text-[15px] text-[#111b21] dark:text-white border border-gray-100 dark:border-gray-800">
+                  <button onClick={() => { setIsMenuOpen(false); setIsCreateGroupModalOpen(true); }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800">New group</button>
+                  <button onClick={() => { setIsMenuOpen(false); if (onOpenSettings) onOpenSettings(); }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800">Settings</button>
+                  <button onClick={() => { setIsMenuOpen(false); logout(); }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800">Log out</button>
+                </div>
+              </>
+            )}
+          </div>
           <button
             onClick={() => setIsNewChatModalOpen(true)}
             title="New Chat"
@@ -121,20 +141,23 @@ export const ChatList = () => {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1">
-          {['all', 'unread', 'groups'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setChatFilter(tab)}
-              className={`px-3 py-1 text-xs rounded-full capitalize font-medium transition-all ${
-                chatFilter === tab
-                  ? 'bg-wa-green/20 text-wa-green border border-wa-green/30'
-                  : 'bg-wa-dark-input dark:bg-wa-dark-input bg-wa-light-input text-wa-text-secondary hover:text-wa-text-primary'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
+          {['All', 'Unread', 'Favorites', 'Groups'].map((tab) => {
+            const val = tab.toLowerCase();
+            return (
+              <button
+                key={tab}
+                onClick={() => setChatFilter(val)}
+                className={`flex-shrink-0 px-4 py-1.5 text-sm rounded-full font-medium transition-all ${
+                  chatFilter === val
+                    ? 'bg-[#d9fdd3] dark:bg-[#0a332c] text-[#00a884] border-transparent'
+                    : 'bg-[#f0f2f5] dark:bg-gray-800 text-[#54656f] dark:text-gray-300 border-transparent hover:bg-gray-200'
+                }`}
+              >
+                {tab}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -266,6 +289,20 @@ export const ChatList = () => {
             );
           })
         )}
+      </div>
+
+      {/* Mobile Floating Action Buttons */}
+      <div className="lg:hidden absolute bottom-24 right-4 flex flex-col items-center gap-4 z-50">
+
+        <button
+          onClick={() => setIsNewChatModalOpen(true)}
+          className="w-16 h-16 bg-[#00a884] rounded-2xl flex items-center justify-center shadow-xl transition-transform active:scale-95"
+        >
+          <MessageSquare className="w-7 h-7 text-white" fill="currentColor" />
+          <div className="absolute w-3 h-3 bg-[#00a884] top-[34%] right-[32%] flex items-center justify-center">
+            <Plus className="w-4 h-4 text-white font-bold" strokeWidth={4} />
+          </div>
+        </button>
       </div>
     </div>
   );

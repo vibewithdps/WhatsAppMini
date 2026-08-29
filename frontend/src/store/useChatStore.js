@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import api from '../services/api';
+import { useAuthStore } from './useAuthStore';
 import { getSocket } from '../services/socket';
 import { playMessageSentSound, playMessageReceivedSound } from '../services/audio';
-import { useAuthStore } from './useAuthStore';
 import { decryptMessage } from '../services/crypto';
 
 export const useChatStore = create((set, get) => ({
@@ -134,7 +134,7 @@ export const useChatStore = create((set, get) => ({
       isMediaPreviewOpen: false,
     }));
 
-    playMessageSentSound();
+    if (user?.conversationTones !== false) playMessageSentSound();
     get().updateChatLatestMessage(chatId, optimisticMessage);
 
     try {
@@ -187,6 +187,11 @@ export const useChatStore = create((set, get) => ({
     }
     const activeChat = get().activeChat;
     const isCurrentChat = activeChat && (activeChat._id === message.chat?._id || activeChat._id === message.chat);
+
+    const user = useAuthStore.getState().user || JSON.parse(localStorage.getItem('wa_user') || 'null');
+    if (user?.conversationTones !== false && (message.sender?._id || message.sender) !== (user?._id || user?.id)) {
+      playMessageReceivedSound();
+    }
 
     if (isCurrentChat) {
       set((state) => {

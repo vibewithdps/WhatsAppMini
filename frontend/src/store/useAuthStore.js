@@ -35,21 +35,19 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  sendOTP: async (phoneOrEmail) => {
+  sendOTP: async (payload) => {
     set({ isLoading: true, error: null });
     try {
-      const isEmail = phoneOrEmail.includes('@');
-      const payload = isEmail
-        ? { email: phoneOrEmail }
-        : { phone: phoneOrEmail };
-
       const res = await api.post('/auth/send-otp', payload);
+      // Save email in local variable to use in verifyOTP
+      window.lastUsedEmail = payload.email;
       set({ isLoading: false });
       return res.data;
     } catch (err) {
+      console.error(err);
       set({
         isLoading: false,
-        error: err.response?.data?.message || 'Failed to send OTP',
+        error: err.response?.data?.message || 'Failed to send OTP via Email',
       });
       throw err;
     }
@@ -58,25 +56,37 @@ export const useAuthStore = create((set, get) => ({
   verifyOTP: async ({ identifier, otp, name, avatar }) => {
     set({ isLoading: true, error: null });
     try {
-      const isEmail = identifier.includes('@');
-      const payload = {
-        ...(isEmail ? { email: identifier } : { phone: identifier }),
+      const res = await api.post('/auth/verify-otp', {
+        phone: identifier,
+        email: window.lastUsedEmail,
         otp,
         name,
-        avatar,
-      };
-
-      const res = await api.post('/auth/verify-otp', payload);
-      const { user, accessToken, refreshToken } = res.data;
-      get().setAuth(user, accessToken, refreshToken);
+        avatar
+      });
+      
+      const { user: dbUser, accessToken, refreshToken } = res.data;
+      get().setAuth(dbUser, accessToken, refreshToken);
+      
       set({ isLoading: false });
-      return user;
+      return dbUser;
     } catch (err) {
+      console.error(err);
       set({
         isLoading: false,
-        error: err.response?.data?.message || 'OTP verification failed',
+        error: err.response?.data?.message || err.message || 'Invalid OTP',
       });
       throw err;
+    }
+  },
+
+    updateAccount: async (data) => {
+    try {
+      const response = await api.put('/users/account', data);
+      set({ user: response.data });
+      return { success: true };
+    } catch (error) {
+      console.error('Update account failed:', error);
+      return { success: false, error: error.response?.data?.message || 'Update failed' };
     }
   },
 

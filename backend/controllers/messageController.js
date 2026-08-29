@@ -91,10 +91,23 @@ export const sendMessage = asyncHandler(async (req, res) => {
     io.to(chatId.toString()).emit('message_received', message);
 
     if (Array.isArray(message.chat.users)) {
-      message.chat.users.forEach((u) => {
+      message.chat.users.forEach(async (u) => {
         const uId = (u._id || u).toString();
         if (uId !== req.user._id.toString()) {
           io.to(uId).emit('message_received', message);
+          
+          // Apply Keep Chats Archived logic
+          try {
+            const recipient = await User.findById(uId);
+            if (recipient && recipient.keepChatsArchived === false) {
+               if (recipient.archivedChats && recipient.archivedChats.some(id => id.toString() === chatId.toString())) {
+                  recipient.archivedChats = recipient.archivedChats.filter(id => id.toString() !== chatId.toString());
+                  await recipient.save();
+               }
+            }
+          } catch(err) {
+            console.error('Error unarchiving chat:', err);
+          }
         }
       });
     }

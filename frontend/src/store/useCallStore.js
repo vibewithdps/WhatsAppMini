@@ -19,6 +19,7 @@ export const useCallStore = create((set, get) => ({
   isCameraOff: false,
   isScreenSharing: false,
   callDuration: 0,
+  isMinimized: false,
   incomingCallData: null,
   callHistory: [],
   isLoadingHistory: false,
@@ -108,6 +109,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   endActiveCall: async (emitSocket = true) => {
+    set({ isMinimized: false });
     stopIncomingRingtone();
     const { localStream, caller, receiver, chatId, callType, callDuration, isGroupCall, groupPeers } = get();
     const socket = getSocket();

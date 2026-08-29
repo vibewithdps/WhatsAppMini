@@ -14,6 +14,7 @@ import { NavigationRail } from './components/NavigationRail';
 import { ChatList } from './components/ChatList';
 import { ChatWindow } from './components/ChatWindow';
 import { CallsTab } from './components/CallsTab';
+import { CommunitiesTab } from './components/CommunitiesTab';
 import { StatusTab } from './components/StatusTab';
 import { IncomingCallModal } from './components/IncomingCallModal';
 import { CallScreen } from './components/CallScreen';
@@ -38,7 +39,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('chats'); // 'chats' | 'status' | 'calls'
   const [authStep, setAuthStep] = useState('login'); // 'login' | 'otp'
   const [otpTarget, setOtpTarget] = useState('');
-  const [debugOtp, setDebugOtp] = useState('');
+  
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -103,7 +104,7 @@ export default function App() {
       return (
         <OTPVerify
           identifier={otpTarget}
-          initialOtp={debugOtp}
+
           onBack={() => setAuthStep('login')}
         />
       );
@@ -112,7 +113,7 @@ export default function App() {
       <Login
         onNavigateToOTP={(target, otp) => {
           setOtpTarget(target);
-          setDebugOtp(otp || '');
+
           setAuthStep('otp');
         }}
       />
@@ -120,7 +121,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-[100dvh] h-screen w-screen flex bg-wa-dark-bg text-wa-text-primary overflow-hidden font-sans select-none fixed inset-0">
+    <div className="fixed inset-0 flex bg-wa-dark-bg text-wa-text-primary overflow-hidden font-sans select-none">
       {/* Leftmost Navigation Rail on Desktop / Bottom bar on Mobile (hidden when chatting on mobile) */}
       <div className={`${activeChat ? 'hidden lg:flex' : 'flex'}`}>
         <NavigationRail
@@ -137,9 +138,10 @@ export default function App() {
           activeChat ? 'hidden lg:flex' : 'flex'
         } flex-shrink-0 h-full w-full lg:w-[380px] xl:w-[420px] overflow-hidden`}
       >
-        {activeTab === 'chats' && <ChatList />}
+        {activeTab === 'chats' && <ChatList onOpenSettings={() => setIsSettingsOpen(true)} />}
         {activeTab === 'status' && <StatusTab />}
         {activeTab === 'calls' && <CallsTab />}
+          
       </div>
 
       {/* Main Chat Window: on mobile takes 100% width and hides when no chat is open */}

@@ -31,3 +31,4 @@ Thumbs.db
 # Testing & Coverage
 coverage/
 .nyc_output/
+backend/serviceAccountKey.json

@@ -7,8 +7,10 @@ import {
   toggleArchiveChat,
   toggleBlockUser,
   saveContact,
+  updateAccountSettings,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/auth.js';
+import { upload } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -17,6 +19,7 @@ router.use(protect);
 router.get('/search', searchUsers);
 router.get('/', getAllUsers);
 router.post('/contacts', saveContact);
+router.put('/account', upload.single('avatar'), updateAccountSettings);
 router.get('/:id', getUserById);
 router.put('/pin-chat/:chatId', togglePinChat);
 router.put('/archive-chat/:chatId', toggleArchiveChat);

@@ -123,3 +123,12 @@
   --epr-search-input-text-color: #e9edef !important;
   --epr-search-border-color: #222d34 !important;
 }
+
+/* Lock Viewport to prevent mobile PWA layout shaking */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior-y: none;
+  position: fixed;
+}

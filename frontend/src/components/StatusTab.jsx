@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { Plus, Camera, Edit2, CircleDot, Eye } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Search, MoreVertical, Plus, Edit2, Camera, Compass } from 'lucide-react';
 import { useStatusStore } from '../store/useStatusStore';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -9,7 +8,6 @@ export const StatusTab = () => {
   const {
     myStatus,
     recentUpdates,
-    viewedUpdates,
     fetchStatusFeed,
     openStoryViewer,
     setIsCreateStatusModalOpen,
@@ -22,159 +20,85 @@ export const StatusTab = () => {
   const hasMyStories = myStatus?.stories && myStatus.stories.length > 0;
 
   return (
-    <div className="w-full h-full flex flex-col bg-wa-dark-panel dark:bg-wa-dark-panel bg-wa-light-panel border-r border-wa-dark-border dark:border-wa-dark-border border-wa-light-border pb-16 lg:pb-0">
+    <div className="w-full h-full flex flex-col bg-white dark:bg-wa-dark-bg pb-16 lg:pb-0 relative">
       {/* Header */}
-      <div className="p-3 sm:p-4 flex items-center justify-between border-b border-wa-dark-border dark:border-wa-dark-border border-wa-light-border">
-        <h1 className="text-xl sm:text-2xl font-bold text-wa-text-primary">Status</h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsCreateStatusModalOpen(true)}
-            title="Create Status"
-            className="p-2 bg-wa-green text-white rounded-full hover:bg-wa-green-dark transition-colors shadow"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+      <div className="p-3 sm:p-4 flex items-center justify-between bg-white dark:bg-wa-dark-bg">
+        <h1 className="text-xl sm:text-2xl font-normal text-[#111b21] dark:text-white">Updates</h1>
+        <div className="flex items-center gap-4 text-[#54656f] dark:text-gray-300">
+          <Search className="w-6 h-6" />
+          <MoreVertical className="w-6 h-6" />
         </div>
       </div>
 
-      {/* Feed List */}
-      <div className="flex-1 overflow-y-auto pb-20 md:pb-2 divide-y divide-wa-dark-border/30">
-        {/* My Status Section */}
-        <div className="p-4">
-          <div className="flex items-center justify-between">
-            <div
+      <div className="flex-1 overflow-y-auto pb-24">
+        {/* Status Section */}
+        <div className="px-4 py-2">
+          <h2 className="text-lg font-medium text-[#111b21] dark:text-white mb-3">Status</h2>
+          
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+            {/* My Status Card */}
+            <div 
               onClick={() => {
-                if (hasMyStories) {
-                  openStoryViewer(myStatus);
-                } else {
-                  setIsCreateStatusModalOpen(true);
-                }
+                if (hasMyStories) openStoryViewer(myStatus);
+                else setIsCreateStatusModalOpen(true);
               }}
-              className="flex items-center gap-3 cursor-pointer group flex-1"
+              className="flex-shrink-0 w-24 h-36 rounded-2xl relative overflow-hidden bg-gray-200 dark:bg-gray-800 cursor-pointer"
             >
-              {/* My Status Avatar */}
-              <div className="relative">
-                <img
-                  src={
-                    user?.avatar ||
-                    '/default-avatar.svg'
-                  }
-                  alt={user?.name}
-                  className={`w-12 h-12 rounded-full object-cover ${
-                    hasMyStories
-                      ? 'ring-2 ring-wa-green ring-offset-2 ring-offset-wa-dark-panel'
-                      : ''
-                  }`}
-                />
-                {!hasMyStories && (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-wa-green rounded-full text-white flex items-center justify-center border-2 border-wa-dark-panel">
-                    <Plus className="w-3.5 h-3.5" />
-                  </div>
-                )}
+              <img src={user?.avatar || '/default-avatar.svg'} className="w-full h-full object-cover opacity-70" alt="My Status" />
+              <div className="absolute top-2 left-2 w-9 h-9 rounded-full border-2 border-[#25d366] overflow-hidden bg-white">
+                <img src={user?.avatar || '/default-avatar.svg'} className="w-full h-full object-cover" />
               </div>
-
-              <div>
-                <h3 className="text-sm font-semibold text-wa-text-primary group-hover:text-wa-green transition-colors">
-                  My Status
-                </h3>
-                <p className="text-xs text-wa-text-secondary mt-0.5">
-                  {hasMyStories
-                    ? `${myStatus.stories.length} active update${
-                        myStatus.stories.length > 1 ? 's' : ''
-                      }`
-                    : 'Tap to add status update'}
-                </p>
-              </div>
+              {!hasMyStories && (
+                <div className="absolute top-7 left-7 w-4 h-4 rounded-full bg-[#25d366] text-white flex items-center justify-center border-2 border-white">
+                  <Plus className="w-3 h-3" strokeWidth={3} />
+                </div>
+              )}
+              <div className="absolute bottom-2 left-2 text-white text-xs font-medium drop-shadow-md">My status</div>
             </div>
 
-            <button
-              onClick={() => setIsCreateStatusModalOpen(true)}
-              className="p-2 text-wa-text-secondary hover:text-wa-green rounded-full hover:bg-wa-dark-hover"
-            >
-              <Camera className="w-5 h-5" />
-            </button>
+            {/* Other Statuses */}
+            {recentUpdates.map(status => (
+              <div 
+                key={status.user._id}
+                onClick={() => openStoryViewer(status)}
+                className="flex-shrink-0 w-24 h-36 rounded-2xl relative overflow-hidden bg-gray-800 cursor-pointer"
+              >
+                {/* Background Preview */}
+                {status.stories[0]?.mediaUrl ? (
+                  <img src={status.stories[0].mediaUrl} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-500" />
+                )}
+                {/* Avatar */}
+                <div className="absolute top-2 left-2 w-9 h-9 rounded-full border-2 border-[#25d366] overflow-hidden bg-white">
+                  <img src={status.user.avatar || '/default-avatar.svg'} className="w-full h-full object-cover" />
+                </div>
+                <div className="absolute bottom-2 left-2 text-white text-xs font-medium drop-shadow-md truncate w-20">
+                  {status.user.name}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Recent Updates */}
-        {recentUpdates.length > 0 && (
-          <div className="py-3">
-            <h4 className="px-4 text-xs font-semibold uppercase tracking-wider text-wa-green mb-2">
-              Recent updates
-            </h4>
-            {recentUpdates.map((group) => (
-              <div
-                key={group.user._id}
-                onClick={() => openStoryViewer(group)}
-                className="flex items-center gap-3 px-4 py-2.5 hover:bg-wa-dark-hover/50 dark:hover:bg-wa-dark-hover/50 hover:bg-wa-light-hover/50 cursor-pointer transition-colors"
-              >
-                <img
-                  src={
-                    group.user.avatar ||
-                    '/default-avatar.svg'
-                  }
-                  alt={group.user.name}
-                  className="w-12 h-12 rounded-full object-cover ring-2 ring-wa-green ring-offset-2 ring-offset-wa-dark-panel"
-                />
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-semibold text-wa-text-primary truncate">
-                    {group.user.name}
-                  </h3>
-                  <p className="text-xs text-wa-text-secondary mt-0.5">
-                    {formatDistanceToNow(new Date(group.latestStoryTime), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="h-2 bg-[#f0f2f5] dark:bg-black/20 my-2" />
 
-        {/* Viewed Updates */}
-        {viewedUpdates.length > 0 && (
-          <div className="py-3">
-            <h4 className="px-4 text-xs font-semibold uppercase tracking-wider text-wa-text-secondary mb-2">
-              Viewed updates
-            </h4>
-            {viewedUpdates.map((group) => (
-              <div
-                key={group.user._id}
-                onClick={() => openStoryViewer(group)}
-                className="flex items-center gap-3 px-4 py-2.5 hover:bg-wa-dark-hover/50 dark:hover:bg-wa-dark-hover/50 hover:bg-wa-light-hover/50 cursor-pointer transition-colors opacity-75"
-              >
-                <img
-                  src={
-                    group.user.avatar ||
-                    '/default-avatar.svg'
-                  }
-                  alt={group.user.name}
-                  className="w-12 h-12 rounded-full object-cover ring-2 ring-wa-text-secondary/50 ring-offset-2 ring-offset-wa-dark-panel"
-                />
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-semibold text-wa-text-primary truncate">
-                    {group.user.name}
-                  </h3>
-                  <p className="text-xs text-wa-text-secondary mt-0.5">
-                    {formatDistanceToNow(new Date(group.latestStoryTime), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        </div>
 
-        {recentUpdates.length === 0 && viewedUpdates.length === 0 && (
-          <div className="p-8 text-center text-wa-text-secondary">
-            <CircleDot className="w-12 h-12 mx-auto mb-3 text-wa-text-secondary/40" />
-            <p className="text-sm">No status updates yet.</p>
-            <p className="text-xs mt-1 text-wa-text-secondary/70">
-              Updates from contacts disappear after 24 hours.
-            </p>
-          </div>
-        )}
+      {/* FABs */}
+      <div className="lg:hidden absolute bottom-24 right-4 flex flex-col items-center gap-4 z-50">
+        <button
+          onClick={() => setIsCreateStatusModalOpen(true)}
+          className="w-10 h-10 bg-[#f0f2f5] dark:bg-gray-700 rounded-xl flex items-center justify-center shadow-lg transition-transform active:scale-95"
+        >
+          <Edit2 className="w-5 h-5 text-[#54656f] dark:text-white" />
+        </button>
+        <button
+          onClick={() => setIsCreateStatusModalOpen(true)}
+          className="w-14 h-14 bg-[#00a884] rounded-2xl flex items-center justify-center shadow-xl transition-transform active:scale-95"
+        >
+          <Camera className="w-6 h-6 text-white" fill="currentColor" />
+        </button>
       </div>
     </div>
   );

@@ -178,6 +178,10 @@ export const setupSocketHandlers = (io) => {
       });
     });
 
+    socket.on('webrtc_ice_candidate', ({ target, candidate }) => {
+      io.to(target).emit('webrtc_ice_candidate', { candidate });
+    });
+
     socket.on('answer_call', ({ signal, to, from }) => {
       const targetId = to?.toString();
       console.log(`✅ [Socket] answer_call from ${from} to ${targetId}`);

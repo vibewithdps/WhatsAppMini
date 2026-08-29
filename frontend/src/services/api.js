@@ -10,13 +10,15 @@ const getBaseUrl = () => {
   if (import.meta.env.PROD) {
     return `${DEFAULT_BACKEND_URL}/api`;
   }
-  return `http://${window.location.hostname || 'localhost'}:5000/api`;
+  // Use relative path so Vite proxy handles it
+  return '/api';
 };
 
 const api = axios.create({
   baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   },
 });
 

@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
+import { uploadMedia } from '../config/cloudinary.js';
 
 /**
  * @desc   Search users by name, phone, or email
@@ -37,21 +38,12 @@ export const getAllUsers = asyncHandler(async (req, res) => {
   const mySavedContacts = currentUser.savedContacts || [];
   const myIdentifiers = [currentUser.phone, currentUser.email].filter(Boolean);
 
-  // Mutual contact logic:
-  // 1. Their phone or email is in my savedContacts
-  // 2. My phone or email is in their savedContacts
+  // WhatsApp logic: Anyone I have saved in my contacts who is registered on the app
   const query = {
     _id: { $ne: req.user._id },
-    $and: [
-      {
-        $or: [
-          { phone: { $in: mySavedContacts } },
-          { email: { $in: mySavedContacts } }
-        ]
-      },
-      {
-        savedContacts: { $in: myIdentifiers }
-      }
+    $or: [
+      { phone: { $in: mySavedContacts } },
+      { email: { $in: mySavedContacts } }
     ]
   };
 
@@ -193,3 +185,78 @@ export const toggleBlockUser = asyncHandler(async (req, res) => {
     isBlocked: !isBlocked,
   });
 });
+
+export const updateAccountSettings = async (req, res) => {
+  try {
+    const { username, email, password, twoStepPin, readReceipts, enterIsSend, keepChatsArchived, conversationTones, name, about, phone, avatar } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (username !== undefined) {
+      // Check if username is taken
+      if (username !== '') {
+        const existing = await User.findOne({ username });
+        if (existing && existing._id.toString() !== user._id.toString()) {
+          return res.status(400).json({ message: 'Username is already taken' });
+        }
+      }
+      user.username = username;
+    }
+
+    if (email !== undefined) {
+      if (email !== '') {
+        const existing = await User.findOne({ email });
+        if (existing && existing._id.toString() !== user._id.toString()) {
+          return res.status(400).json({ message: 'Email is already taken' });
+        }
+      }
+      user.email = email;
+    }
+
+    if (password !== undefined && password !== '') {
+      user.password = password; // Will be hashed by pre-save hook
+    }
+
+    if (name !== undefined) user.name = name;
+    if (about !== undefined) user.about = about;
+    if (phone !== undefined) user.phone = phone;
+    if (avatar !== undefined) user.avatar = avatar;
+
+    if (req.file) {
+      const uploaded = await uploadMedia(req.file, 'whatsapp_avatars');
+      user.avatar = uploaded.url;
+    }
+    
+    if (conversationTones !== undefined) {
+      user.conversationTones = conversationTones;
+    }
+
+    if (enterIsSend !== undefined) {
+      user.enterIsSend = enterIsSend;
+    }
+
+    if (keepChatsArchived !== undefined) {
+      user.keepChatsArchived = keepChatsArchived;
+    }
+
+    if (readReceipts !== undefined) {
+      user.readReceipts = readReceipts;
+    }
+
+    if (twoStepPin !== undefined) {
+      user.twoStepPin = twoStepPin;
+    }
+
+    await user.save();
+
+    // Return updated user (without sensitive fields)
+    const updatedUser = await User.findById(req.user._id);
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Update account settings error:', error);
+    res.status(500).json({ message: 'Server error while updating account' });
+  }
+};

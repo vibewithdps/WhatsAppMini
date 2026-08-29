@@ -51,6 +51,19 @@ export const useSocket = () => {
     });
 
     // Calls
+    socket.on('webrtc_ice_candidate', async ({ candidate }) => {
+      if (window.peerConnection && window.peerConnection.remoteDescription) {
+        try {
+          await window.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error('Error adding ICE candidate', e);
+        }
+      } else {
+        if (!window.iceCandidateQueue) window.iceCandidateQueue = [];
+        window.iceCandidateQueue.push(candidate);
+      }
+    });
+
     socket.on('incoming_call', (data) => {
       handleIncomingCall(data);
     });
@@ -103,6 +116,7 @@ export const useSocket = () => {
       socket.off('message_delivered_receipt');
       socket.off('typing');
       socket.off('stop_typing');
+      socket.off('webrtc_ice_candidate');
       socket.off('incoming_call');
       socket.off('incoming_group_call');
       socket.off('call_ended');
