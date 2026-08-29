@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-const DEFAULT_BACKEND_URL = 'https://whatsapp-mini-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://whatsapp-dcrz.onrender.com';
 
 const getSocketUrl = () => {
   if (import.meta.env.VITE_API_URL) {

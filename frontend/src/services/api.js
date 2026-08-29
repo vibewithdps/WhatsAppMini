@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Live production backend URL on Render
-const DEFAULT_BACKEND_URL = 'https://whatsapp-mini-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://whatsapp-dcrz.onrender.com';
 
 const getBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) {
