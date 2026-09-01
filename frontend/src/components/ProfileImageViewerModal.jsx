@@ -14,7 +14,7 @@ import { useChatStore } from '../store/useChatStore';
 import { useWebRTC } from '../hooks/useWebRTC';
 
 export const ProfileImageViewerModal = () => {
-  const { isOpen, imageUrl, title, subtitle, user, closeImageViewer } = useImageViewerStore();
+  const { isOpen, imageUrl, title, subtitle, user, mediaType, closeImageViewer } = useImageViewerStore();
   const { selectChat, chats } = useChatStore();
   const { startCall } = useWebRTC();
 
@@ -156,11 +156,21 @@ export const ProfileImageViewerModal = () => {
             transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
           }}
         >
-          <img
-            src={imageUrl}
-            alt={title}
-            className="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl ring-1 ring-white/10"
-          />
+          {mediaType === 'video' ? (
+            <video
+              src={imageUrl}
+              autoPlay
+              controls
+              playsInline
+              className="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl ring-1 ring-white/10"
+            />
+          ) : (
+            <img
+              src={imageUrl}
+              alt={title}
+              className="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl ring-1 ring-white/10"
+            />
+          )}
         </div>
       </div>
 

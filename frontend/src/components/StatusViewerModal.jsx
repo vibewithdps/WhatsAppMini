@@ -25,6 +25,10 @@ export const StatusViewerModal = () => {
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.muted = isMuted;
+      if (!isMuted) {
+        videoRef.current.volume = 1;
+        videoRef.current.play().catch(e => console.log("Autoplay block:", e));
+      }
     }
   }, [isMuted]);
 
@@ -154,7 +158,7 @@ export const StatusViewerModal = () => {
               src={story.mediaUrl}
               autoPlay
               playsInline
-              muted={isMuted}
+              defaultMuted={true}
               className="max-h-full max-w-full object-contain rounded-2xl shadow-lg"
             />
             <button 

@@ -186,10 +186,10 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
               <div className="relative group">
                 <video
                   src={message.fileUrl}
-                  controls
+                  controls playsInline preload="metadata"
                   onClick={(e) => {
-                    // Only open viewer if they didn't click the controls
-                    // Native controls are hard to detect, but we can just let them use controls
+                    // Only open viewer if they didn't click the controls playsInline preload="metadata"
+                    // Native controls playsInline preload="metadata" are hard to detect, but we can just let them use controls playsInline preload="metadata"
                     // Or we can add an expand icon!
                   }}
                   className="max-h-72 w-full rounded-lg bg-black"
