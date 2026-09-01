@@ -21,7 +21,8 @@ import { useChatStore } from '../store/useChatStore';
 
 export const CallsTab = () => {
   const user = useAuthStore((state) => state.user);
-  const { callHistory, fetchCallHistory, isLoadingHistory } = useCallStore();
+  const { callHistory, fetchCallHistory, isLoadingHistory, deleteCallLog, clearAllCallLogs } = useCallStore();
+  const [showMenu, setShowMenu] = React.useState(false);
   const { setIsNewChatModalOpen } = useChatStore();
   const { startCall } = useWebRTC();
 
@@ -40,9 +41,24 @@ export const CallsTab = () => {
   return (
     <div className="w-full h-full flex flex-col bg-white dark:bg-wa-dark-bg pb-16 lg:pb-0 relative">
       {/* Header */}
-      <div className="p-3 sm:p-4 flex items-center justify-between bg-white dark:bg-wa-dark-bg">
+      <div className="p-3 sm:p-4 flex items-center justify-between bg-white dark:bg-wa-dark-bg relative">
         <h1 className="text-xl sm:text-2xl font-normal text-[#111b21] dark:text-white">Calls</h1>
-        
+        <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full dark:hover:bg-gray-800">
+          <MoreVertical className="w-6 h-6" />
+        </button>
+        {showMenu && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)}></div>
+            <div className="absolute right-4 top-14 bg-white dark:bg-wa-dark-panel rounded-xl shadow-xl py-2 z-50 text-[15px] border border-gray-100 dark:border-gray-800 w-48">
+              <button 
+                onClick={() => { setShowMenu(false); clearAllCallLogs(); }} 
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-wa-text-primary flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4 text-red-500" /> Clear all calls
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto pb-24">
@@ -64,7 +80,7 @@ export const CallsTab = () => {
               return (
                 <div
                   key={call._id}
-                  className="flex items-center px-4 py-3 hover:bg-[#f5f6f6] dark:hover:bg-gray-800 cursor-pointer"
+                  className="group flex items-center px-4 py-3 hover:bg-[#f5f6f6] dark:hover:bg-gray-800 cursor-pointer"
                 >
                   {/* Avatar */}
                   <img
@@ -91,19 +107,30 @@ export const CallsTab = () => {
                   </div>
 
                   {/* Action Icon */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startCall(otherUser, call.type === 'video');
-                    }}
-                    className="p-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    {call.type === 'video' ? (
-                      <Video className="w-6 h-6 text-[#00a884]" />
-                    ) : (
-                      <Phone className="w-6 h-6 text-[#00a884]" />
-                    )}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startCall(otherUser, call.type === 'video');
+                      }}
+                      className="p-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      {call.type === 'video' ? (
+                        <Video className="w-6 h-6 text-[#00a884]" />
+                      ) : (
+                        <Phone className="w-6 h-6 text-[#00a884]" />
+                      )}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteCallLog(call._id);
+                      }}
+                      className="p-2 md:p-3 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 md:opacity-0"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               );
             })

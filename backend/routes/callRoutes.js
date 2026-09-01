@@ -16,6 +16,14 @@ router.get('/', getCallHistory);
 router.get('/', getCallHistory);
 router.post('/', createCallLog);
 router.put('/:callId', updateCallStatus);
+router.delete('/clear-all', asyncHandler(async (req, res) => {
+  const Call = (await import('../models/Call.js')).default;
+  await Call.deleteMany({
+    $or: [{ caller: req.user._id }, { receiver: req.user._id }]
+  });
+  res.status(200).json({ success: true });
+}));
+
 router.delete('/:callId', asyncHandler(async (req, res) => {
   const Call = (await import('../models/Call.js')).default;
   const call = await Call.findById(req.params.callId);

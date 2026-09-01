@@ -109,7 +109,7 @@ export const useCallStore = create((set, get) => ({
   },
 
   endActiveCall: async (emitSocket = true) => {
-    const useAuthStore = require('./useAuthStore').default;
+    const { useAuthStore } = await import('./useAuthStore.js');
     const currentUser = useAuthStore.getState().user;
     const isInitiator = get().caller?._id === currentUser?._id;
 
