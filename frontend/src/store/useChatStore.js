@@ -90,7 +90,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  sendMessage: async ({ content, file, fileUrl: customFileUrl, replyToId, encrypted, fileType }) => {
+  sendMessage: async ({ content, file, fileUrl: customFileUrl, replyToId, encrypted, fileType, isViewOnce }) => {
     const activeChat = get().activeChat;
     const user = useAuthStore.getState().user || JSON.parse(localStorage.getItem('wa_user') || 'null');
     if (!activeChat) {
@@ -145,7 +145,7 @@ export const useChatStore = create((set, get) => ({
         if (content) formData.append('content', content);
         formData.append('file', file);
         if (replyToId) formData.append('replyToId', replyToId);
-      if (messageData.isViewOnce) formData.append('isViewOnce', 'true');
+        if (isViewOnce) formData.append('isViewOnce', 'true');
         if (encrypted) formData.append('encrypted', encrypted);
         if (resolvedFileType) formData.append('fileType', resolvedFileType);
 

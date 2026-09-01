@@ -35,7 +35,11 @@ export const uploadMedia = async (file, folder = 'whatsapp_media') => {
         {
           folder,
           resource_type: file.mimetype.startsWith('video/') ? 'video' : 'auto',
-          ...(file.mimetype.startsWith('video/') && { format: 'mp4' })
+          ...(file.mimetype.startsWith('video/') && { 
+            format: 'mp4',
+            audio_codec: 'aac',
+            video_codec: 'auto'
+          })
         },
         (error, result) => {
           if (error) return reject(error);
