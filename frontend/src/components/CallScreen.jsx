@@ -26,6 +26,7 @@ const CallUI = () => {
   } = useCallStore();
 
   const { toggleScreenShare, cleanupPeer, flipCamera } = useWebRTC();
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -168,7 +169,7 @@ const CallUI = () => {
           {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
         </button>
 
-                {callType === 'video' && (
+                {callType === 'video' && isMobile && (
           <button
             onClick={flipCamera}
             className="p-4 rounded-full bg-white/10 hover:bg-white/20 transition-all text-white"
@@ -178,7 +179,7 @@ const CallUI = () => {
           </button>
         )}
         
-        {callType === 'video' && (
+        {callType === 'video' && !isMobile && (
           <button
             onClick={toggleScreenShare}
             className={`p-4 rounded-full transition-all ${isScreenSharing ? 'bg-blue-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}

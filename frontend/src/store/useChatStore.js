@@ -145,6 +145,7 @@ export const useChatStore = create((set, get) => ({
         if (content) formData.append('content', content);
         formData.append('file', file);
         if (replyToId) formData.append('replyToId', replyToId);
+      if (messageData.isViewOnce) formData.append('isViewOnce', 'true');
         if (encrypted) formData.append('encrypted', encrypted);
         if (resolvedFileType) formData.append('fileType', resolvedFileType);
 

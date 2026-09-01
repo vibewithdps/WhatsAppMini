@@ -66,6 +66,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     replyTo: replyToId || null,
     encrypted: encrypted === 'true' || encrypted === true,
     expiresAt,
+    isViewOnce: isViewOnce === 'true' || isViewOnce === true,
   };
 
   let message = await Message.create(newMessageData);

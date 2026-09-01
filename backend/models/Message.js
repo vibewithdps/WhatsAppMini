@@ -59,6 +59,14 @@ const messageSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    isViewOnce: {
+      type: Boolean,
+      default: false,
+    },
+    isOpened: {
+      type: Boolean,
+      default: false,
+    },
     callDetails: {
       callType: {
         type: String,

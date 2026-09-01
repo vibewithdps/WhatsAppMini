@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import { useImageViewerStore } from '../store/useImageViewerStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useChatStore } from '../store/useChatStore';
+import { Camera } from 'lucide-react';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -109,7 +110,39 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
         )}
 
         {/* Media Attachments */}
-        {message.fileUrl && !isDeleted && (
+        {/* Media Attachments */}
+        {message.isViewOnce && !isDeleted ? (
+          <div className="mb-2 w-48">
+            <button
+              onClick={() => {
+                if (message.isOpened || message.sender._id === user._id) {
+                   // Sender can't open their own view once if we follow WA rules, or we can just let them view it once.
+                   // Actually, if it's opened, do nothing.
+                   if (message.isOpened) return;
+                }
+                
+                // Call API to mark as opened immediately
+                if (message.sender._id !== user._id) {
+                  openViewOnceMessage(message._id);
+                }
+                
+                openImageViewer({
+                  imageUrl: message.fileUrl,
+                  title: 'View Once Photo',
+                  mediaType: 'image'
+                });
+              }}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg border ${message.isOpened ? 'border-gray-300 dark:border-gray-700 bg-transparent opacity-60 cursor-default' : 'border-wa-green/30 bg-wa-green/10 hover:bg-wa-green/20 cursor-pointer transition-colors'}`}
+            >
+              <div className="relative">
+                <span className={`border-2 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold ${message.isOpened ? 'border-gray-500 text-gray-500' : 'border-wa-green text-wa-green'}`}>1</span>
+              </div>
+              <span className={`font-medium text-sm ${message.isOpened ? 'text-gray-500' : (isSentByMe ? 'text-wa-green-dark dark:text-wa-green' : 'text-wa-green')}`}>
+                {message.isOpened ? 'Opened' : 'Photo'}
+              </span>
+            </button>
+          </div>
+        ) : (message.fileUrl && !isDeleted && (
           <div className="mb-2 rounded-lg overflow-hidden">
             {message.fileType === 'image' && (
               <div className="relative group">
@@ -257,7 +290,7 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
               </div>
             )}
           </div>
-        )}
+        ))}
 
         {/* Real WhatsApp Call Log Bubble */}
         {message.fileType === 'call' && (

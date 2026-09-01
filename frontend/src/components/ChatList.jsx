@@ -302,6 +302,14 @@ export const ChatList = ({ onOpenSettings }) => {
               <div
                 key={chat._id}
                 onClick={() => selectChat(chat)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setContextMenu({
+                    chat,
+                    x: e.pageX,
+                    y: e.pageY
+                  });
+                }}
                 className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors relative group ${
                   isSelected
                     ? 'bg-wa-dark-hover dark:bg-wa-dark-hover bg-wa-light-hover'
@@ -419,6 +427,8 @@ export const ChatList = ({ onOpenSettings }) => {
       </div>
       
       {contextMenu && (
+        <>
+        <div className="fixed inset-0 z-[99]" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }} />
         <div 
           className="fixed z-[100] bg-white dark:bg-wa-dark-panel shadow-xl rounded-lg py-2 border border-gray-200 dark:border-wa-dark-border min-w-[160px]"
           style={{ top: contextMenu.y, left: contextMenu.x }}
@@ -436,6 +446,7 @@ export const ChatList = ({ onOpenSettings }) => {
             <Lock className="w-4 h-4" /> {user?.lockedChats?.includes(contextMenu.chat._id) ? 'Unlock Chat' : 'Lock Chat'}
           </button>
         </div>
+        </>
       )}
       <InstallPwaModal isOpen={showInstallModal} onClose={() => setShowInstallModal(false)} />
       {showPinModal && (

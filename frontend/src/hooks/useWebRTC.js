@@ -234,6 +234,10 @@ export const useWebRTC = () => {
       const newFacingMode = window.currentFacingMode === 'user' ? 'environment' : 'user';
       window.currentFacingMode = newFacingMode;
       
+      // Stop the current track first for iOS compatibility (iOS cannot open two cameras simultaneously)
+      videoTrack.stop();
+      currentStream.removeTrack(videoTrack);
+      
       let newStream;
       try {
         // Try strict exact facingMode first
@@ -258,8 +262,6 @@ export const useWebRTC = () => {
       }
       
       // Update local stream
-      videoTrack.stop();
-      currentStream.removeTrack(videoTrack);
       currentStream.addTrack(newVideoTrack);
       
       // Clone the stream so React/Zustand detects the reference change
