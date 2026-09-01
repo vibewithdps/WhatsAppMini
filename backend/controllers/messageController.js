@@ -11,7 +11,7 @@ import { uploadMedia } from '../config/cloudinary.js';
  * @access Private
  */
 export const sendMessage = asyncHandler(async (req, res) => {
-  const { content, chatId, replyToId, encrypted, fileType: customFileType, fileUrl: customFileUrl } = req.body;
+  const { content, chatId, replyToId, encrypted, fileType: customFileType, fileUrl: customFileUrl, isViewOnce } = req.body;
 
   if (!chatId) {
     res.status(400);
