@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Trash2, Eye } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Trash2, Eye, VolumeX, Volume2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useStatusStore } from '../store/useStatusStore';
 import { useAuthStore } from '../store/useAuthStore';
