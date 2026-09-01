@@ -332,3 +332,26 @@ export const markChatMessagesRead = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, message: 'Messages marked as read' });
 });
+
+export const openViewOnceMessage = asyncHandler(async (req, res) => {
+  const message = await Message.findById(req.params.id);
+  if (!message) {
+    res.status(404);
+    throw new Error('Message not found');
+  }
+  if (!message.isViewOnce) {
+    res.status(400);
+    throw new Error('Not a view once message');
+  }
+  
+  message.isOpened = true;
+  message.fileUrl = null; // Permanently delete URL from DB
+  await message.save();
+
+  const io = req.app.get('io');
+  if (io) {
+    io.to(message.chat.toString()).emit('message updated', message);
+  }
+  
+  res.json(message);
+});
