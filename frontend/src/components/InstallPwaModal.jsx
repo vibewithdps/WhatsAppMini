@@ -3,7 +3,7 @@ import { X, DownloadCloud, Share, PlusSquare, Smartphone, Monitor, ChevronRight,
 import { usePWAStore } from '../store/usePWAStore';
 
 export const InstallPwaModal = ({ isOpen, onClose }) => {
-  const { isInstallable, promptInstall } = usePWAStore();
+  const { isInstallable, installApp } = usePWAStore();
   const [downloading, setDownloading] = useState(false);
 
   if (!isOpen) return null;
@@ -14,11 +14,13 @@ export const InstallPwaModal = ({ isOpen, onClose }) => {
   const handleInstallClick = async () => {
     if (isInstallable) {
       setDownloading(true);
-      setTimeout(() => {
-        promptInstall();
-        setDownloading(false);
-        onClose();
-      }, 1000);
+      try {
+        await installApp();
+      } catch (err) {
+        console.error("Install prompt error:", err);
+      }
+      setDownloading(false);
+      onClose();
     } else {
       alert("App (PWA) Installation is currently managed via browser's Add to Home Screen feature for maximum security and auto-updates.");
     }
@@ -88,7 +90,7 @@ export const InstallPwaModal = ({ isOpen, onClose }) => {
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
                 <div className="absolute inset-0 flex items-center justify-center gap-2 text-white font-bold text-lg">
                   {downloading ? (
-                    <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
                       <DownloadCloud className="w-6 h-6 animate-bounce" />
