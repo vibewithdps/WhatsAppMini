@@ -12,6 +12,7 @@ import {
 import { useImageViewerStore } from '../store/useImageViewerStore';
 import { useChatStore } from '../store/useChatStore';
 import { useWebRTC } from '../hooks/useWebRTC';
+import { forceDownload } from '../utils/downloadHelper';
 
 export const ProfileImageViewerModal = () => {
   const { isOpen, imageUrl, title, subtitle, user, mediaType, closeImageViewer } = useImageViewerStore();
@@ -58,12 +59,7 @@ export const ProfileImageViewerModal = () => {
   };
 
   const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = `${title.replace(/\s+/g, '_')}_profile.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    forceDownload(imageUrl, `${title.replace(/\s+/g, '_')}_profile.jpg`);
   };
 
   return (
@@ -119,21 +115,6 @@ export const ProfileImageViewerModal = () => {
           </button>
 
           {/* Close Button */}
-          <button
-            onClick={() => {
-              const link = document.createElement('a');
-              link.href = currentImage.imageUrl;
-              link.download = `WhatsApp_Mini_Image_${Date.now()}.jpg`;
-              link.target = '_blank';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
-            title="Download"
-            className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-colors ml-2"
-          >
-            <Download className="w-6 h-6" />
-          </button>
           <button
             onClick={closeImageViewer}
             title="Close"

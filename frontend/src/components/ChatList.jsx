@@ -310,7 +310,7 @@ export const ChatList = ({ onOpenSettings }) => {
                     y: e.pageY
                   });
                 }}
-                className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors relative group ${
+                className={`chat-list-item-enter flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors relative group ${
                   isSelected
                     ? 'bg-wa-dark-hover dark:bg-wa-dark-hover bg-wa-light-hover'
                     : 'hover:bg-wa-dark-hover/50 dark:hover:bg-wa-dark-hover/50 hover:bg-wa-light-hover/50'

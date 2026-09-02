@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useImageViewerStore } from '../store/useImageViewerStore';
+import { forceDownload } from '../utils/downloadHelper';
 import { useAuthStore } from '../store/useAuthStore';
 import { useChatStore } from '../store/useChatStore';
 import { Camera } from 'lucide-react';
@@ -165,14 +166,9 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
                   />
                 </a>
                 <button
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = message.fileUrl;
-                    link.download = message.fileName || `WhatsApp_Image_${Date.now()}.jpg`;
-                    link.target = '_blank';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    forceDownload(message.fileUrl, message.fileName || `WhatsApp_Image_${Date.now()}.jpg`);
                   }}
                   title="Download"
                   className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 md:opacity-0 opacity-100"
@@ -209,14 +205,9 @@ export const MessageBubble = ({ message, onReply, onForward }) => {
                   <Maximize2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = message.fileUrl;
-                    link.download = message.fileName || `WhatsApp_Video_${Date.now()}.mp4`;
-                    link.target = '_blank';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    forceDownload(message.fileUrl, message.fileName || `WhatsApp_Video_${Date.now()}.mp4`);
                   }}
                   title="Download"
                   className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 md:opacity-0 opacity-100 z-10"

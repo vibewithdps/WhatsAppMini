@@ -132,3 +132,40 @@ html, body, #root {
   overscroll-behavior-y: none;
   position: fixed;
 }
+
+/* Global Micro-Animations */
+.chat-bubble-enter {
+  animation: slideInBottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes slideInBottom {
+  from { opacity: 0; transform: translateY(15px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.chat-list-item-enter {
+  animation: fadeInRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-fill-mode: both;
+}
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.modal-enter {
+  animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Staggered Chat List */
+.chat-list-item-enter:nth-child(1) { animation-delay: 0.05s; }
+.chat-list-item-enter:nth-child(2) { animation-delay: 0.1s; }
+.chat-list-item-enter:nth-child(3) { animation-delay: 0.15s; }
+.chat-list-item-enter:nth-child(4) { animation-delay: 0.2s; }
+.chat-list-item-enter:nth-child(5) { animation-delay: 0.25s; }
+.chat-list-item-enter:nth-child(6) { animation-delay: 0.3s; }
+.chat-list-item-enter:nth-child(7) { animation-delay: 0.35s; }
+.chat-list-item-enter:nth-child(8) { animation-delay: 0.4s; }
+
