@@ -20,7 +20,7 @@ export const InstallPwaModal = ({ isOpen, onClose }) => {
         onClose();
       }, 1000);
     } else {
-      alert("APK / App Installation is currently managed via browser's Add to Home Screen feature for maximum security and auto-updates.");
+      alert("App (PWA) Installation is currently managed via browser's Add to Home Screen feature for maximum security and auto-updates.");
     }
   };
 
@@ -92,7 +92,7 @@ export const InstallPwaModal = ({ isOpen, onClose }) => {
                   ) : (
                     <>
                       <DownloadCloud className="w-6 h-6 animate-bounce" />
-                      <span>Download APK / App</span>
+                      <span>Download App (PWA)</span>
                     </>
                   )}
                 </div>
